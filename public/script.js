@@ -18,7 +18,8 @@ onlineUsersDisplay.style.top = '10px';
 onlineUsersDisplay.style.right = '10px';
 onlineUsersDisplay.style.fontSize = '12px';
 onlineUsersDisplay.style.color = 'white';
-onlineUsersDisplay.style.background = 'red';
+onlineUsersDisplay.style.background = '#ff9100'; // vibrant orange
+
 onlineUsersDisplay.style.padding = '2px 6px';
 onlineUsersDisplay.style.borderRadius = '20px';
 onlineUsersDisplay.style.animation = 'blink 1s infinite';
