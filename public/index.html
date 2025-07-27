@@ -1,40 +1,125 @@
-<!-- index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Bro_Chatz</title>
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css">
+  <script defer src="/socket.io/socket.io.js"></script>
+  <script defer src="script.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #121212;
+      color: white;
+      margin: 0;
+      padding: 0;
+    }
+    #onlineIndicator {
+      position: fixed;
+      top: 5px;
+      right: 10px;
+      font-size: 10px;
+      color: #fff;
+    }
+    #onlineDot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: red;
+      margin-right: 5px;
+      animation: blink 1s infinite;
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+    #notification {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 12px;
+      color: #ccc;
+      padding: 5px 10px;
+      animation: fadein 0.5s, fadeout 0.5s 3s;
+      backdrop-filter: blur(6px);
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+    }
+    @keyframes fadein {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes fadeout {
+      from { opacity: 1; }
+      to { opacity: 0; }
+    }
+    #typingIndicator {
+      font-size: 12px;
+      margin-top: 5px;
+      color: #aaa;
+    }
+    #chat {
+      padding: 15px;
+      max-height: 80vh;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .message {
+      display: inline-block;
+      max-width: 70%;
+      padding: 10px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(8px);
+      margin-bottom: 2px;
+      word-wrap: break-word;
+    }
+    #messageInput {
+      width: 75%;
+      padding: 10px;
+      border-radius: 20px;
+      border: none;
+    }
+    #sendBtn {
+      padding: 10px;
+      border-radius: 20px;
+      background: #4CAF50;
+      border: none;
+      color: white;
+      cursor: pointer;
+    }
+    #welcome-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+  </style>
 </head>
 <body>
-  <div class="welcome-screen" id="welcome">
-    <div class="welcome-text">WELCOME</div>
-    <div class="welcome-text">TO</div>
-    <div class="welcome-text">BRO_CHATZ</div>
-    <div class="enter-name">
-      <input type="text" id="username" placeholder="Enter your name" />
-      <button onclick="startChat()">Start Chat</button>
-    </div>
+  <div id="onlineIndicator">
+    <span id="onlineDot"></span>
+    <span id="onlineCount">0 online</span>
   </div>
 
-  <div class="chat-window" id="chatWindow">
-    <div class="messages" id="messages"></div>
-    <div id="typingStatus" class="typing-status"></div>
-    <div class="chat-input">
-      <input type="text" id="chatInput" placeholder="Type a message" />
-      <button onclick="sendMessage()">Send</button>
-    </div>
+  <div id="welcome-screen">
+    <input type="text" id="usernameInput" placeholder="Enter your name" />
+    <button onclick="startChat()">Start Chat</button>
   </div>
 
-  <!-- ✅ Blinking online user count (only one, clean) -->
-  <div id="blinkingOnline" class="blinking-online">
-    <span id="onlineUsers">0</span> online
+  <div id="chat-screen" style="display: none;">
+    <div id="chat"></div>
+    <div id="typingIndicator"></div>
+    <input type="text" id="messageInput" placeholder="Type your message" />
+    <button id="sendBtn">Send</button>
   </div>
 
-  <script src="/socket.io/socket.io.js"></script>
-  <script src="script.js"></script>
+  <div id="notification" style="display: none;"></div>
 </body>
 </html>
-

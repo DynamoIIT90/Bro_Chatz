@@ -1,89 +1,68 @@
 const socket = io();
-let username = "";
+let username = '';
+let userColor = getRandomColor();
 
-// Assign a random color to this user (preserved until refresh)
-const userColor = '#' + Math.floor(Math.random() * 16777215).toString(16);
+document.getElementById('start-chat').onclick = () => {
+  const input = document.getElementById('username-input');
+  if (input.value.trim() !== '') {
+    username = input.value.trim();
+    document.getElementById('welcome-screen').style.display = 'none';
+    document.getElementById('chat-container').style.display = 'block';
+    socket.emit('join', username);
+  }
+};
 
-// DOM elements
-const welcome = document.getElementById('welcome');
-const chatWindow = document.getElementById('chatWindow');
-const usernameInput = document.getElementById('username');
-const messages = document.getElementById('messages');
-const chatInput = document.getElementById('chatInput');
+document.getElementById('message-input').addEventListener('keypress', () => {
+  socket.emit('typing', username);
+});
 
-// Create online user counter
-const onlineUsersDisplay = document.createElement('div');
-onlineUsersDisplay.style.position = 'fixed';
-onlineUsersDisplay.style.top = '10px';
-onlineUsersDisplay.style.right = '10px';
-onlineUsersDisplay.style.fontSize = '12px';
-onlineUsersDisplay.style.color = 'white';
-onlineUsersDisplay.style.background = '#ff4444';
-onlineUsersDisplay.style.padding = '2px 6px';
-onlineUsersDisplay.style.borderRadius = '20px';
-onlineUsersDisplay.style.animation = 'blink 1s infinite';
-onlineUsersDisplay.innerText = '🔴 0 online';
-document.body.appendChild(onlineUsersDisplay);
+document.getElementById('send-button').onclick = () => {
+  const input = document.getElementById('message-input');
+  const message = input.value.trim();
+  if (message !== '') {
+    socket.emit('chat message', { user: username, msg: message, color: userColor });
+    input.value = '';
+  }
+};
 
-// Create typing indicator
-const typingIndicator = document.createElement('div');
-typingIndicator.style.fontSize = '12px';
-typingIndicator.style.color = 'gray';
-typingIndicator.style.margin = '5px 10px';
-typingIndicator.style.fontStyle = 'italic';
-messages.parentNode.insertBefore(typingIndicator, messages.nextSibling);
+socket.on('chat message', ({ user, msg, color }) => {
+  const messageBox = document.getElementById('messages');
+  const item = document.createElement('div');
+  item.classList.add('message-bubble');
+  item.style.background = `${color}55`; // translucent
+  item.style.border = `1px solid ${color}`;
+  item.innerHTML = `<strong style="color:${color}">${user}:</strong> ${msg}`;
+  messageBox.appendChild(item);
+  messageBox.scrollTop = messageBox.scrollHeight;
+});
 
-// Create notification container
-const notificationBanner = document.createElement('div');
-notificationBanner.style.position = 'absolute';
-notificationBanner.style.top = '0';
-notificationBanner.style.left = '50%';
-notificationBanner.style.transform = 'translateX(-50%)';
-notificationBanner.style.zIndex = '9999';
-notificationBanner.style.fontSize = '12px';
-notificationBanner.style.color = '#fff';
-notificationBanner.style.background = 'rgba(0, 0, 0, 0.6)';
-notificationBanner.style.padding = '6px 12px';
-notificationBanner.style.borderRadius = '10px';
-notificationBanner.style.opacity = '0';
-notificationBanner.style.transition = 'opacity 0.5s ease';
-chatWindow.appendChild(notificationBanner);
+socket.on('user joined', name => showNotification(`${name} entered the chatz`, 'green'));
+socket.on('user left', name => showNotification(`${name} exited the chatz`, 'red'));
 
-// Show notification
-function showNotification(user, action) {
-  notificationBanner.innerText = `${user} ${action} the chatz`;
-  notificationBanner.style.opacity = '1';
-  setTimeout(() => {
-    notificationBanner.style.opacity = '0';
-  }, 3500);
+socket.on('user typing', names => {
+  const typingDisplay = document.getElementById('typing-indicator');
+  if (names.length > 0) {
+    typingDisplay.innerText = `${names.join(', ')} ${names.length === 1 ? 'is' : 'are'} typing...`;
+  } else {
+    typingDisplay.innerText = '';
+  }
+});
+
+socket.on('online users', count => {
+  const dot = document.getElementById('online-dot');
+  dot.innerText = count;
+});
+
+function getRandomColor() {
+  const colors = ['#3498db', '#e74c3c', '#9b59b6', '#1abc9c', '#f1c40f', '#e67e22'];
+  return colors[Math.floor(Math.random() * colors.length)];
 }
 
-// Show chat window
-function startChat() {
-  username = usernameInput.value.trim();
-  if (!username) return alert("Please enter your name.");
-
-  socket.emit('setUsername', username);
-  welcome.style.display = 'none';
-  chatWindow.style.display = 'block';
+function showNotification(text, color) {
+  const notif = document.createElement('div');
+  notif.className = 'user-notification';
+  notif.innerText = text;
+  notif.style.color = color;
+  document.body.appendChild(notif);
+  setTimeout(() => notif.remove(), 4000);
 }
-
-// Send message
-function sendMessage() {
-  const message = chatInput.value.trim();
-  if (message === "") return;
-
-  socket.emit('chat message', { user: username, message, color: userColor });
-  chatInput.value = "";
-  socket.emit('stopTyping', username);
-}
-
-// Listen for messages with IG-style bubble
-socket.on('chat message', (data) => {
-  const bubbleWrapper = document.createElement('div');
-  bubbleWrapper.style.display = 'flex';
-  bubbleWrapper.style.justifyContent = data.user === username ? 'flex-end' : 'flex-start';
-  bubbleWrapper.style.margin = '6px 10px';
-
-  const bubble = document.createElement('div');
-  bubble.innerHTML = `<strong style="font-size: 12px;">${data.user}</strong><br><span style="font-size: 14px;">${data.message}</span>`;

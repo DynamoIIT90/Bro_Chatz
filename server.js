@@ -1,59 +1,48 @@
 const express = require('express');
+const http = require('http');
+const socketIo = require('socket.io');
 const app = express();
-const http = require('http').createServer(app);
-const io = require('socket.io')(http);
-const path = require('path');
+const server = http.createServer(app);
+const io = socketIo(server);
 
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static('public'));
 
-let onlineUsers = {};
+let users = {};
 let typingUsers = {};
 
-io.on('connection', (socket) => {
-  console.log('A user connected');
+io.on('connection', socket => {
+  let currentUser = '';
 
-  socket.on('setUsername', (username) => {
-    socket.username = username;
-    onlineUsers[socket.id] = username;
-
-    io.emit('updateUserCount', Object.keys(onlineUsers).length);
-
-    // Notify all users someone joined
-    io.emit('userNotification', { user: username, action: 'joined' });
+  socket.on('join', username => {
+    currentUser = username;
+    users[socket.id] = username;
+    io.emit('user joined', username);
+    io.emit('online users', Object.keys(users).length);
   });
 
-  socket.on('chat message', (data) => {
-    io.emit('chat message', data);
+  socket.on('chat message', ({ user, msg, color }) => {
+    io.emit('chat message', { user, msg, color });
   });
 
-  socket.on('typing', (username) => {
-    typingUsers[socket.id] = username;
-    io.emit('typingStatus', Object.values(typingUsers));
-  });
-
-  socket.on('stopTyping', () => {
-    delete typingUsers[socket.id];
-    io.emit('typingStatus', Object.values(typingUsers));
+  socket.on('typing', name => {
+    typingUsers[socket.id] = name;
+    io.emit('user typing', Object.values(typingUsers));
+    setTimeout(() => {
+      delete typingUsers[socket.id];
+      io.emit('user typing', Object.values(typingUsers));
+    }, 3000);
   });
 
   socket.on('disconnect', () => {
-    const username = onlineUsers[socket.id];
-    delete onlineUsers[socket.id];
-    delete typingUsers[socket.id];
-
-    io.emit('updateUserCount', Object.keys(onlineUsers).length);
-    io.emit('typingStatus', Object.values(typingUsers));
-
-    if (username) {
-      // Notify all users someone left
-      io.emit('userNotification', { user: username, action: 'left' });
+    if (users[socket.id]) {
+      io.emit('user left', users[socket.id]);
+      delete users[socket.id];
+      delete typingUsers[socket.id];
+      io.emit('online users', Object.keys(users).length);
+      io.emit('user typing', Object.values(typingUsers));
     }
-
-    console.log('A user disconnected');
   });
 });
 
 const PORT = process.env.PORT || 3000;
-http.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-});
+server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
