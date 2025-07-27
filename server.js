@@ -1,48 +1,40 @@
-const express = require('express');
-const http = require('http');
-const socketIo = require('socket.io');
+const express = require("express");
 const app = express();
-const server = http.createServer(app);
-const io = socketIo(server);
+const http = require("http").createServer(app);
+const io = require("socket.io")(http);
 
-app.use(express.static('public'));
+app.use(express.static(__dirname));
 
-let users = {};
-let typingUsers = {};
+let userCount = 0;
 
-io.on('connection', socket => {
-  let currentUser = '';
+io.on("connection", (socket) => {
+  let currentUser = "";
 
-  socket.on('join', username => {
+  userCount++;
+  io.emit("user count", userCount);
+
+  socket.on("join", (username) => {
     currentUser = username;
-    users[socket.id] = username;
-    io.emit('user joined', username);
-    io.emit('online users', Object.keys(users).length);
+    io.emit("notify", `${username} entered the chatz`);
   });
 
-  socket.on('chat message', ({ user, msg, color }) => {
-    io.emit('chat message', { user, msg, color });
+  socket.on("chat message", (data) => {
+    io.emit("chat message", data);
   });
 
-  socket.on('typing', name => {
-    typingUsers[socket.id] = name;
-    io.emit('user typing', Object.values(typingUsers));
-    setTimeout(() => {
-      delete typingUsers[socket.id];
-      io.emit('user typing', Object.values(typingUsers));
-    }, 3000);
+  socket.on("typing", (data) => {
+    socket.broadcast.emit("typing", data);
   });
 
-  socket.on('disconnect', () => {
-    if (users[socket.id]) {
-      io.emit('user left', users[socket.id]);
-      delete users[socket.id];
-      delete typingUsers[socket.id];
-      io.emit('online users', Object.keys(users).length);
-      io.emit('user typing', Object.values(typingUsers));
+  socket.on("disconnect", () => {
+    userCount--;
+    io.emit("user count", userCount);
+    if (currentUser) {
+      io.emit("notify", `${currentUser} exited the chatz`);
     }
   });
 });
 
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+http.listen(3000, () => {
+  console.log("Server running on http://localhost:3000");
+});
