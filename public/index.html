@@ -2,25 +2,32 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Bro_Chatz</title>
-  <link rel="stylesheet" href="style.css"/>
+  <title>Brochst Chat</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div id="welcome-screen">
-    <h1>Welcome to <span class="rainbow">Bro_Chatz</span></h1>
-    <input type="text" id="username-input" placeholder="Enter your name" />
-    <button id="start-button">Start Chat</button>
+  <div id="bg-toggle">
+    <button onclick="toggleTheme()">Toggle Mode</button>
   </div>
 
-  <div id="chat-screen" style="display: none;">
-    <div id="status-bar">
-      <span id="online-count">● 0 online</span>
-      <span id="typing-status"></span>
-    </div>
+  <div id="welcomeMessage" class="welcome-text">
+    <h1 class="fade-in">WELCOME</h1>
+    <h1 class="fade-in delay1">TO</h1>
+    <h1 class="fade-in delay2">BRO_CHATZ</h1>
+  </div>
+
+  <div id="welcome" class="welcome-box">
+    <h2>Enter your name to start chatting:</h2>
+    <input type="text" id="username" placeholder="Your name" />
+    <button onclick="startChat()">Start Chat</button>
+  </div>
+
+  <div id="chatWindow">
+    <div id="onlineIndicator">🟢 0 online</div>
+    <div id="entryExitPopup"></div>
     <div id="messages"></div>
-    <input type="text" id="message-input" placeholder="Type your message..." />
-    <button id="send-button">Send</button>
+    <div id="typingIndicator"></div>
+    <input type="text" id="chatInput" placeholder="Type your message..." onkeydown="if(event.key === 'Enter') sendMessage()" />
   </div>
 
   <script src="/socket.io/socket.io.js"></script>

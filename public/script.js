@@ -1,75 +1,71 @@
 const socket = io();
-
-const welcomeScreen = document.getElementById("welcome-screen");
-const chatScreen = document.getElementById("chat-screen");
-const usernameInput = document.getElementById("username-input");
-const startButton = document.getElementById("start-button");
-const messagesDiv = document.getElementById("messages");
-const messageInput = document.getElementById("message-input");
-const sendButton = document.getElementById("send-button");
-const onlineCountSpan = document.getElementById("online-count");
-const typingStatus = document.getElementById("typing-status");
-
-let username = "";
-let userColor = "";
-
-function getRandomColor() {
-  const letters = "0123456789ABCDEF";
-  let color = "#";
-  for (let i = 0; i < 6; i++) {
-    color += letters[Math.floor(Math.random() * 16)];
-  }
-  return color;
-}
+let username = '';
+let userColor = '';
 
 function startChat() {
-  username = usernameInput.value.trim();
-  if (username !== "") {
-    userColor = getRandomColor();
-    welcomeScreen.style.display = "none";
-    chatScreen.style.display = "block";
-    socket.emit("join", username);
-  }
+  username = document.getElementById('username').value.trim();
+  if (!username) return;
+
+  document.getElementById('welcome').style.display = 'none';
+  document.getElementById('welcomeMessage').style.display = 'none';
+  document.getElementById('chatWindow').style.display = 'flex';
+
+  userColor = getRandomDarkColor();
+  socket.emit('new-user', username);
 }
 
-startButton.onclick = startChat;
+function sendMessage() {
+  const input = document.getElementById('chatInput');
+  const message = input.value.trim();
+  if (!message) return;
 
-sendButton.onclick = () => {
-  const message = messageInput.value.trim();
-  if (message !== "") {
-    socket.emit("chat message", { user: username, message, color: userColor });
-    messageInput.value = "";
-    socket.emit("typing", { user: username, typing: false });
-  }
-};
+  socket.emit('chat-message', { username, message, color: userColor });
+  input.value = '';
+}
 
-messageInput.addEventListener("input", () => {
-  socket.emit("typing", { user: username, typing: messageInput.value.trim() !== "" });
+socket.on('chat-message', data => {
+  const msgDiv = document.createElement('div');
+  msgDiv.classList.add('message');
+  msgDiv.innerHTML = `<span class="username" style="color: ${data.color}">${data.username}:</span> ${data.message}`;
+  document.getElementById('messages').appendChild(msgDiv);
+  scrollToBottom();
 });
 
-socket.on("chat message", (data) => {
-  const msg = document.createElement("div");
-  msg.innerHTML = `<strong style="color:${data.color}">${data.user}</strong>: ${data.message}`;
-  messagesDiv.appendChild(msg);
-  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+socket.on('user-list', count => {
+  document.getElementById('onlineIndicator').textContent = `🟢 ${count} online`;
 });
 
-socket.on("user count", (count) => {
-  onlineCountSpan.textContent = `● ${count} online`;
+socket.on('entry-exit', text => {
+  const popup = document.getElementById('entryExitPopup');
+  popup.textContent = text;
+  popup.style.display = 'block';
+  setTimeout(() => { popup.style.display = 'none'; }, 4000);
 });
 
-socket.on("typing", (data) => {
-  if (data.typing && data.user !== username) {
-    typingStatus.textContent = `${data.user} is typing...`;
+socket.on('typing', users => {
+  const indicator = document.getElementById('typingIndicator');
+  if (users.length === 0) {
+    indicator.textContent = '';
   } else {
-    typingStatus.textContent = "";
+    const names = users.join(', ');
+    indicator.textContent = `${names} ${users.length === 1 ? 'is' : 'are'} typing...`;
   }
 });
 
-socket.on("notify", (info) => {
-  const note = document.createElement("div");
-  note.classList.add("join-leave-note");
-  note.textContent = info;
-  messagesDiv.appendChild(note);
-  setTimeout(() => note.remove(), 4000);
+document.getElementById('chatInput').addEventListener('input', () => {
+  socket.emit('typing', username);
 });
+
+function getRandomDarkColor() {
+  const base = 30 + Math.floor(Math.random() * 80);
+  return `rgb(${base}, ${base}, ${base})`;
+}
+
+function scrollToBottom() {
+  const messages = document.getElementById('messages');
+  messages.scrollTop = messages.scrollHeight;
+}
+
+function toggleTheme() {
+  document.body.classList.toggle('dark-mode');
+}
