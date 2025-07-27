@@ -18,8 +18,7 @@ onlineUsersDisplay.style.top = '10px';
 onlineUsersDisplay.style.right = '10px';
 onlineUsersDisplay.style.fontSize = '12px';
 onlineUsersDisplay.style.color = 'white';
-onlineUsersDisplay.style.background = '#ff9100'; // vibrant orange
-
+onlineUsersDisplay.style.background = '#ff4444';
 onlineUsersDisplay.style.padding = '2px 6px';
 onlineUsersDisplay.style.borderRadius = '20px';
 onlineUsersDisplay.style.animation = 'blink 1s infinite';
@@ -33,6 +32,31 @@ typingIndicator.style.color = 'gray';
 typingIndicator.style.margin = '5px 10px';
 typingIndicator.style.fontStyle = 'italic';
 messages.parentNode.insertBefore(typingIndicator, messages.nextSibling);
+
+// Create notification container
+const notificationBanner = document.createElement('div');
+notificationBanner.style.position = 'absolute';
+notificationBanner.style.top = '0';
+notificationBanner.style.left = '50%';
+notificationBanner.style.transform = 'translateX(-50%)';
+notificationBanner.style.zIndex = '9999';
+notificationBanner.style.fontSize = '12px';
+notificationBanner.style.color = '#fff';
+notificationBanner.style.background = 'rgba(0, 0, 0, 0.6)';
+notificationBanner.style.padding = '6px 12px';
+notificationBanner.style.borderRadius = '10px';
+notificationBanner.style.opacity = '0';
+notificationBanner.style.transition = 'opacity 0.5s ease';
+chatWindow.appendChild(notificationBanner);
+
+// Show notification
+function showNotification(user, action) {
+  notificationBanner.innerText = `${user} ${action} the chatz`;
+  notificationBanner.style.opacity = '1';
+  setTimeout(() => {
+    notificationBanner.style.opacity = '0';
+  }, 3500);
+}
 
 // Show chat window
 function startChat() {
@@ -70,10 +94,18 @@ socket.on('updateUserCount', (count) => {
 
 // Typing status update
 socket.on('typingStatus', (typingUsers) => {
-  const names = typingUsers.filter(name => name !== username);
-  typingIndicator.innerText = names.length === 0 ? "" :
-    names.length === 1 ? `${names[0]} is typing...` :
-    `${names.join(', ')} are typing...`;
+  if (typingUsers.length === 0) {
+    typingIndicator.innerText = "";
+  } else {
+    const names = typingUsers.filter(name => name !== username);
+    if (names.length === 0) {
+      typingIndicator.innerText = "";
+    } else if (names.length === 1) {
+      typingIndicator.innerText = `${names[0]} is typing...`;
+    } else {
+      typingIndicator.innerText = `${names.join(', ')} are typing...`;
+    }
+  }
 });
 
 // Typing events
@@ -82,5 +114,12 @@ chatInput.addEventListener('input', () => {
     socket.emit('typing', username);
   } else {
     socket.emit('stopTyping', username);
+  }
+});
+
+// Entry/exit popup handling
+socket.on('userNotification', ({ user, action }) => {
+  if (user !== username) {
+    showNotification(user, action === 'joined' ? 'entered' : 'exited');
   }
 });
