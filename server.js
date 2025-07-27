@@ -2,53 +2,50 @@ const express = require('express');
 const app = express();
 const http = require('http').createServer(app);
 const io = require('socket.io')(http);
+const path = require('path');
 
-const PORT = process.env.PORT || 3000;
+app.use(express.static(path.join(__dirname, 'public')));
 
-app.use(express.static('public'));
-
-app.get('/', (req, res) => {
-  res.sendFile(__dirname + '/public/index.html');
-});
-
-// Track online users and typing users
-let onlineUsers = 0;
-let typingUsers = new Set();
+let usersOnline = 0;
+let typingUsers = [];
 
 io.on('connection', (socket) => {
-  console.log('A user connected');
-  onlineUsers++;
-  io.emit('updateUserCount', onlineUsers);
+  usersOnline++;
+  io.emit('updateUserCount', usersOnline);
 
   socket.on('setUsername', (username) => {
     socket.username = username;
   });
 
   socket.on('chat message', (data) => {
-    io.emit('chat message', data);
+    io.emit('chat message', {
+      user: data.user,
+      message: data.message,
+      color: data.color  // ✅ Broadcast color with message
+    });
   });
 
   socket.on('typing', (username) => {
-    typingUsers.add(username);
-    io.emit('typingStatus', Array.from(typingUsers));
+    if (!typingUsers.includes(username)) {
+      typingUsers.push(username);
+      io.emit('typingStatus', typingUsers);
+    }
   });
 
   socket.on('stopTyping', (username) => {
-    typingUsers.delete(username);
-    io.emit('typingStatus', Array.from(typingUsers));
+    typingUsers = typingUsers.filter(name => name !== username);
+    io.emit('typingStatus', typingUsers);
   });
 
   socket.on('disconnect', () => {
-    console.log('A user disconnected');
-    onlineUsers--;
-    io.emit('updateUserCount', onlineUsers);
-
-    // Remove typing user if they disconnect
-    typingUsers.delete(socket.username);
-    io.emit('typingStatus', Array.from(typingUsers));
+    usersOnline--;
+    io.emit('updateUserCount', usersOnline);
+    typingUsers = typingUsers.filter(name => name !== socket.username);
+    io.emit('typingStatus', typingUsers);
   });
 });
 
+const PORT = process.env.PORT || 3000;
 http.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
+  console.log(`Server listening on port ${PORT}`);
 });

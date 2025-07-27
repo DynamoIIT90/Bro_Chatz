@@ -1,6 +1,9 @@
 const socket = io();
 let username = "";
 
+// Assign a random color to this user (preserved until refresh)
+const userColor = '#' + Math.floor(Math.random() * 16777215).toString(16);
+
 // DOM elements
 const welcome = document.getElementById('welcome');
 const chatWindow = document.getElementById('chatWindow');
@@ -34,7 +37,7 @@ messages.parentNode.insertBefore(typingIndicator, messages.nextSibling);
 function startChat() {
   username = usernameInput.value.trim();
   if (!username) return alert("Please enter your name.");
-  
+
   socket.emit('setUsername', username);
   welcome.style.display = 'none';
   chatWindow.style.display = 'block';
@@ -44,8 +47,8 @@ function startChat() {
 function sendMessage() {
   const message = chatInput.value.trim();
   if (message === "") return;
-  
-  socket.emit('chat message', { user: username, message });
+
+  socket.emit('chat message', { user: username, message, color: userColor });
   chatInput.value = "";
   socket.emit('stopTyping', username);
 }
@@ -54,6 +57,7 @@ function sendMessage() {
 socket.on('chat message', (data) => {
   const msgElement = document.createElement('div');
   msgElement.innerHTML = `<strong>${data.user}:</strong> ${data.message}`;
+  msgElement.style.color = data.color || 'white';
   messages.appendChild(msgElement);
   messages.scrollTop = messages.scrollHeight;
 });
@@ -65,18 +69,10 @@ socket.on('updateUserCount', (count) => {
 
 // Typing status update
 socket.on('typingStatus', (typingUsers) => {
-  if (typingUsers.length === 0) {
-    typingIndicator.innerText = "";
-  } else {
-    const names = typingUsers.filter(name => name !== username);
-    if (names.length === 0) {
-      typingIndicator.innerText = "";
-    } else if (names.length === 1) {
-      typingIndicator.innerText = `${names[0]} is typing...`;
-    } else {
-      typingIndicator.innerText = `${names.join(', ')} are typing...`;
-    }
-  }
+  const names = typingUsers.filter(name => name !== username);
+  typingIndicator.innerText = names.length === 0 ? "" :
+    names.length === 1 ? `${names[0]} is typing...` :
+    `${names.join(', ')} are typing...`;
 });
 
 // Typing events
