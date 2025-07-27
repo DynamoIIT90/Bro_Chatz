@@ -1,71 +1,78 @@
 const socket = io();
-let username = '';
-let userColor = '';
+let myName = "";
+let userColor = "";
+
+function getRandomDarkColor() {
+  const hue = Math.floor(Math.random() * 360);
+  return `hsl(${hue}, 70%, 35%)`;
+}
 
 function startChat() {
-  username = document.getElementById('username').value.trim();
-  if (!username) return;
-
-  document.getElementById('welcome').style.display = 'none';
-  document.getElementById('welcomeMessage').style.display = 'none';
-  document.getElementById('chatWindow').style.display = 'flex';
-
+  const input = document.getElementById("username");
+  const name = input.value.trim();
+  if (!name) return;
+  myName = name;
   userColor = getRandomDarkColor();
-  socket.emit('new-user', username);
+
+  document.getElementById("welcomeScreen").style.display = "none";
+  document.getElementById("chatWindow").style.display = "flex";
+
+  socket.emit("user-joined", { name, color: userColor });
 }
 
 function sendMessage() {
-  const input = document.getElementById('chatInput');
-  const message = input.value.trim();
-  if (!message) return;
-
-  socket.emit('chat-message', { username, message, color: userColor });
-  input.value = '';
+  const input = document.getElementById("chatInput");
+  const msg = input.value.trim();
+  if (!msg) return;
+  socket.emit("chat-message", { name: myName, message: msg, color: userColor });
+  input.value = "";
 }
 
-socket.on('chat-message', data => {
-  const msgDiv = document.createElement('div');
-  msgDiv.classList.add('message');
-  msgDiv.innerHTML = `<span class="username" style="color: ${data.color}">${data.username}:</span> ${data.message}`;
-  document.getElementById('messages').appendChild(msgDiv);
-  scrollToBottom();
+socket.on("chat-message", (data) => {
+  const msgDiv = document.createElement("div");
+  msgDiv.classList.add("message");
+  msgDiv.innerHTML = `<span class="username" style="color:${data.color}">${data.name}:</span> <span>${data.message}</span>`;
+  document.getElementById("messages").appendChild(msgDiv);
+  document.getElementById("messages").scrollTop = messages.scrollHeight;
 });
 
-socket.on('user-list', count => {
-  document.getElementById('onlineIndicator').textContent = `🟢 ${count} online`;
+socket.on("user-joined", ({ name }) => {
+  showNotification(`${name} entered the chatz`);
+});
+socket.on("user-left", ({ name }) => {
+  showNotification(`${name} exited the chatz`);
+});
+socket.on("update-online-count", (count) => {
+  document.getElementById("onlineCount").innerText = `💬 ${count} Online`;
 });
 
-socket.on('entry-exit', text => {
-  const popup = document.getElementById('entryExitPopup');
-  popup.textContent = text;
-  popup.style.display = 'block';
-  setTimeout(() => { popup.style.display = 'none'; }, 4000);
+// Typing
+let typingTimeout;
+function notifyTyping() {
+  socket.emit("typing", myName);
+  clearTimeout(typingTimeout);
+  typingTimeout = setTimeout(() => {
+    socket.emit("typing", "");
+  }, 1000);
+}
+socket.on("typing", (data) => {
+  document.getElementById("typingIndicator").innerText = data
+    ? `${data} is typing...`
+    : "";
 });
 
-socket.on('typing', users => {
-  const indicator = document.getElementById('typingIndicator');
-  if (users.length === 0) {
-    indicator.textContent = '';
-  } else {
-    const names = users.join(', ');
-    indicator.textContent = `${names} ${users.length === 1 ? 'is' : 'are'} typing...`;
-  }
-});
-
-document.getElementById('chatInput').addEventListener('input', () => {
-  socket.emit('typing', username);
-});
-
-function getRandomDarkColor() {
-  const base = 30 + Math.floor(Math.random() * 80);
-  return `rgb(${base}, ${base}, ${base})`;
+// Notifications
+function showNotification(text) {
+  const note = document.createElement("div");
+  note.classList.add("notification");
+  note.innerText = text;
+  document.getElementById("notifications").appendChild(note);
+  setTimeout(() => {
+    note.remove();
+  }, 3000);
 }
 
-function scrollToBottom() {
-  const messages = document.getElementById('messages');
-  messages.scrollTop = messages.scrollHeight;
-}
-
-function toggleTheme() {
-  document.body.classList.toggle('dark-mode');
-}
+// Mode Toggle
+document.getElementById("toggleMode").addEventListener("click", () => {
+  document.body.classList.toggle("dark");
+});
