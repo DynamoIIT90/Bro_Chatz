@@ -78,48 +78,12 @@ function sendMessage() {
   socket.emit('stopTyping', username);
 }
 
-// Listen for messages
+// Listen for messages with IG-style bubble
 socket.on('chat message', (data) => {
-  const msgElement = document.createElement('div');
-  msgElement.innerHTML = `<strong>${data.user}:</strong> ${data.message}`;
-  msgElement.style.color = data.color || 'white';
-  messages.appendChild(msgElement);
-  messages.scrollTop = messages.scrollHeight;
-});
+  const bubbleWrapper = document.createElement('div');
+  bubbleWrapper.style.display = 'flex';
+  bubbleWrapper.style.justifyContent = data.user === username ? 'flex-end' : 'flex-start';
+  bubbleWrapper.style.margin = '6px 10px';
 
-// Online users update
-socket.on('updateUserCount', (count) => {
-  onlineUsersDisplay.innerText = `🔴 ${count} online`;
-});
-
-// Typing status update
-socket.on('typingStatus', (typingUsers) => {
-  if (typingUsers.length === 0) {
-    typingIndicator.innerText = "";
-  } else {
-    const names = typingUsers.filter(name => name !== username);
-    if (names.length === 0) {
-      typingIndicator.innerText = "";
-    } else if (names.length === 1) {
-      typingIndicator.innerText = `${names[0]} is typing...`;
-    } else {
-      typingIndicator.innerText = `${names.join(', ')} are typing...`;
-    }
-  }
-});
-
-// Typing events
-chatInput.addEventListener('input', () => {
-  if (chatInput.value.trim() !== "") {
-    socket.emit('typing', username);
-  } else {
-    socket.emit('stopTyping', username);
-  }
-});
-
-// Entry/exit popup handling
-socket.on('userNotification', ({ user, action }) => {
-  if (user !== username) {
-    showNotification(user, action === 'joined' ? 'entered' : 'exited');
-  }
-});
+  const bubble = document.createElement('div');
+  bubble.innerHTML = `<strong style="font-size: 12px;">${data.user}</strong><br><span style="font-size: 14px;">${data.message}</span>`;
