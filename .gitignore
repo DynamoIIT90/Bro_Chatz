@@ -1,0 +1,15 @@
+# Ignore node_modules (huge)
+node_modules/
+
+# Ignore logs
+*.log
+
+# Ignore environment files (if you use them)
+.env
+
+# Ignore system files
+.DS_Store
+Thumbs.db
+
+# Optional: lock file
+package-lock.json
