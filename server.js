@@ -1,35 +1,41 @@
 const express = require("express");
 const app = express();
-const server = require("http").createServer(app);
-const io = require("socket.io")(server);
+const http = require("http").createServer(app);
+const io = require("socket.io")(http);
+const PORT = process.env.PORT || 3000;
 
 app.use(express.static("public"));
 
-let users = {};
+let onlineUsers = {};
 
 io.on("connection", (socket) => {
-  socket.on("user-joined", ({ name, color }) => {
-    users[socket.id] = { name, color };
-    io.emit("user-joined", { name });
-    io.emit("update-online-count", Object.keys(users).length);
+  socket.on("new-user", (username) => {
+    socket.username = username;
+    onlineUsers[socket.id] = username;
+    io.emit("user-connected", username);
+    io.emit("update-online-count", Object.keys(onlineUsers).length);
   });
 
   socket.on("chat-message", (data) => {
-    io.emit("chat-message", data);
+    socket.broadcast.emit("chat-message", data);
   });
 
   socket.on("typing", (name) => {
     socket.broadcast.emit("typing", name);
   });
 
+  socket.on("stop-typing", (name) => {
+    socket.broadcast.emit("stop-typing", name);
+  });
+
   socket.on("disconnect", () => {
-    const user = users[socket.id];
-    if (user) {
-      io.emit("user-left", { name: user.name });
-      delete users[socket.id];
-      io.emit("update-online-count", Object.keys(users).length);
-    }
+    const name = onlineUsers[socket.id];
+    delete onlineUsers[socket.id];
+    io.emit("user-disconnected", name);
+    io.emit("update-online-count", Object.keys(onlineUsers).length);
   });
 });
 
-server.listen(3000, () => console.log("Server running on http://localhost:3000"));
+http.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
+});

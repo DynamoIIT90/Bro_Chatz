@@ -1,78 +1,98 @@
+// script.js
 const socket = io();
-let myName = "";
+
+const welcomeScreen = document.getElementById("welcome-screen");
+const chatContainer = document.getElementById("chat-container");
+const nameInput = document.getElementById("name-input");
+const startChatBtn = document.getElementById("start-chat-btn");
+const chatBox = document.getElementById("chat-box");
+const messageForm = document.getElementById("message-form");
+const messageInput = document.getElementById("message-input");
+const onlineCounter = document.getElementById("online-counter");
+const typingIndicator = document.getElementById("typing-indicator");
+const notifications = document.getElementById("notifications");
+const toggleModeBtn = document.getElementById("toggle-mode");
+
+let username = "";
 let userColor = "";
+let typingTimeout;
 
 function getRandomDarkColor() {
-  const hue = Math.floor(Math.random() * 360);
-  return `hsl(${hue}, 70%, 35%)`;
+  const letters = '0123456789ABCDEF';
+  let color = '#';
+  for (let i = 0; i < 6; i++) {
+    color += letters[Math.floor(Math.random() * 12)];
+  }
+  return color;
 }
 
-function startChat() {
-  const input = document.getElementById("username");
-  const name = input.value.trim();
+function appendMessage(user, message, color) {
+  const messageEl = document.createElement("div");
+  messageEl.classList.add("message");
+  messageEl.innerHTML = `<strong class="username" style="color:${color}">${user}</strong>: ${message}`;
+  chatBox.appendChild(messageEl);
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+function showNotification(text) {
+  notifications.innerText = text;
+  notifications.classList.remove("hidden");
+  setTimeout(() => notifications.classList.add("hidden"), 4000);
+}
+
+startChatBtn.addEventListener("click", () => {
+  const name = nameInput.value.trim();
   if (!name) return;
-  myName = name;
+  username = name;
   userColor = getRandomDarkColor();
+  welcomeScreen.classList.add("hidden");
+  chatContainer.classList.remove("hidden");
+  socket.emit("new-user", username);
+});
 
-  document.getElementById("welcomeScreen").style.display = "none";
-  document.getElementById("chatWindow").style.display = "flex";
-
-  socket.emit("user-joined", { name, color: userColor });
-}
-
-function sendMessage() {
-  const input = document.getElementById("chatInput");
-  const msg = input.value.trim();
+messageForm.addEventListener("submit", (e) => {
+  e.preventDefault();
+  const msg = messageInput.value.trim();
   if (!msg) return;
-  socket.emit("chat-message", { name: myName, message: msg, color: userColor });
-  input.value = "";
-}
+  appendMessage("You", msg, userColor);
+  socket.emit("chat-message", { user: username, message: msg, color: userColor });
+  messageInput.value = "";
+});
+
+messageInput.addEventListener("input", () => {
+  socket.emit("typing", username);
+  clearTimeout(typingTimeout);
+  typingTimeout = setTimeout(() => socket.emit("stop-typing", username), 1000);
+});
+
+toggleModeBtn.addEventListener("click", () => {
+  document.body.classList.toggle("dark-mode");
+});
 
 socket.on("chat-message", (data) => {
-  const msgDiv = document.createElement("div");
-  msgDiv.classList.add("message");
-  msgDiv.innerHTML = `<span class="username" style="color:${data.color}">${data.name}:</span> <span>${data.message}</span>`;
-  document.getElementById("messages").appendChild(msgDiv);
-  document.getElementById("messages").scrollTop = messages.scrollHeight;
+  appendMessage(data.user, data.message, data.color);
 });
 
-socket.on("user-joined", ({ name }) => {
+socket.on("user-connected", (name) => {
   showNotification(`${name} entered the chatz`);
 });
-socket.on("user-left", ({ name }) => {
+
+socket.on("user-disconnected", (name) => {
   showNotification(`${name} exited the chatz`);
 });
+
 socket.on("update-online-count", (count) => {
-  document.getElementById("onlineCount").innerText = `💬 ${count} Online`;
+  onlineCounter.innerText = `${count} online`;
 });
 
-// Typing
-let typingTimeout;
-function notifyTyping() {
-  socket.emit("typing", myName);
-  clearTimeout(typingTimeout);
-  typingTimeout = setTimeout(() => {
-    socket.emit("typing", "");
-  }, 1000);
-}
-socket.on("typing", (data) => {
-  document.getElementById("typingIndicator").innerText = data
-    ? `${data} is typing...`
-    : "";
+let typingUsers = new Set();
+
+socket.on("typing", (name) => {
+  typingUsers.add(name);
+  typingIndicator.innerText = `${[...typingUsers].join(", ")} typing...`;
 });
 
-// Notifications
-function showNotification(text) {
-  const note = document.createElement("div");
-  note.classList.add("notification");
-  note.innerText = text;
-  document.getElementById("notifications").appendChild(note);
-  setTimeout(() => {
-    note.remove();
-  }, 3000);
-}
-
-// Mode Toggle
-document.getElementById("toggleMode").addEventListener("click", () => {
-  document.body.classList.toggle("dark");
+socket.on("stop-typing", (name) => {
+  typingUsers.delete(name);
+  typingIndicator.innerText = typingUsers.size ? `${[...typingUsers].join(", ")} typing...` : "";
 });
