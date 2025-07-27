@@ -5,43 +5,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Bro_Chatz</title>
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
-  <style>
-    #onlineStatus {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      font-size: 11px;
-      color: white;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-
-    .blinking-dot {
-      width: 8px;
-      height: 8px;
-      background-color: lime;
-      border-radius: 50%;
-      animation: blink 1s infinite;
-    }
-
-    @keyframes blink {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0; }
-    }
-
-    #typingStatus {
-      font-size: 11px;
-      color: gray;
-      margin: 4px 0 0 12px;
-    }
-
-    .hidden-badge {
-      display: none !important;
-    }
-  </style>
 </head>
 <body>
   <div class="welcome-screen" id="welcome">
@@ -49,37 +14,27 @@
     <div class="welcome-text">TO</div>
     <div class="welcome-text">BRO_CHATZ</div>
     <div class="enter-name">
-      <input type="text" id="username" placeholder="Enter your name">
+      <input type="text" id="username" placeholder="Enter your name" />
       <button onclick="startChat()">Start Chat</button>
     </div>
   </div>
 
   <div class="chat-window" id="chatWindow">
-    <div id="onlineStatus">
-      <div class="blinking-dot"></div>
-      <span id="onlineCount">0</span> online
-    </div>
-
     <div class="messages" id="messages"></div>
-
-    <div id="typingStatus"></div>
-
+    <div id="typingStatus" class="typing-status"></div>
     <div class="chat-input">
-      <input type="text" id="chatInput" placeholder="Type a message">
+      <input type="text" id="chatInput" placeholder="Type a message" />
       <button onclick="sendMessage()">Send</button>
     </div>
   </div>
 
+  <!-- ✅ Blinking online user count (only one, clean) -->
+  <div id="blinkingOnline" class="blinking-online">
+    <span id="onlineUsers">0</span> online
+  </div>
+
   <script src="/socket.io/socket.io.js"></script>
   <script src="script.js"></script>
-  <script>
-    // Hide Render green badge if any (failsafe)
-    const mutation = new MutationObserver(() => {
-      document.querySelectorAll('div[style*="green"], span[style*="green"]').forEach(el => {
-        el.classList.add("hidden-badge");
-      });
-    });
-    mutation.observe(document.body, { childList: true, subtree: true });
-  </script>
 </body>
 </html>
+
