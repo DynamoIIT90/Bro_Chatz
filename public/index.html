@@ -1,41 +1,72 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Bro_ChatZ</title>
-  <link rel="stylesheet" href="style.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bro_Chatz</title>
+    <!-- Link to your custom stylesheet for all the cool UI and RGB effects -->
+    <link rel="stylesheet" href="style.css">
+    <!-- Font Awesome for icons (e.g., send icon, emoji icons, spinner) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
-  <div id="hero">
-    <div class="overlay"></div>
-    <div class="waves"></div>
-
-    <div id="heroText">
-      <h1>
-        <span>WELCOME</span><br />
-        <span>TO</span><br />
-        <span>BRO_CHATZ</span>
-      </h1>
+    <!-- Welcome Screen - This is the first thing users see -->
+    <div id="welcome-screen" class="screen active">
+        <div class="welcome-content">
+            <h1 class="welcome-text">WELCOME</h1>
+            <h2 class="welcome-text">TO</h2>
+            <h1 class="welcome-text bro-chatz-title">BRO_CHATZ</h1>
+            <input type="text" id="username-input" placeholder="Enter your name..." maxlength="20" autofocus>
+            <button id="start-chat-btn" class="cool-button">Start Chat</button>
+        </div>
     </div>
 
-    <div id="formContainer">
-      <form id="nameForm">
-        <label for="username">Enter your name to start chatting:</label>
-        <input type="text" id="username" placeholder="Your name" required />
-        <button type="submit">Start Chat</button>
-      </form>
+    <!-- Chat Screen - This is the main chat interface -->
+    <div id="chat-screen" class="screen">
+        <header class="chat-header">
+            <h2 class="chat-title">Bro_Chatz</h2>
+            <!-- Capsule for online users -->
+            <div class="online-users-capsule">
+                <span id="online-users-count">0</span> Online
+                <span class="blinking-dot"></span>
+            </div>
+        </header>
+
+        <!-- Area for displaying messages -->
+        <div id="messages" class="messages-container">
+            <!-- Messages will be dynamically added here by script.js -->
+        </div>
+
+        <!-- Area for "xyz is typing..." notifications -->
+        <div id="typing-indicator" class="typing-indicator"></div>
+
+        <!-- Area for "xyz entered/exited" notifications -->
+        <div id="user-status-notifications" class="user-status-notifications"></div>
+
+        <!-- Message input area -->
+        <div class="message-input-area">
+            <input type="text" id="message-input" placeholder="Type a message..." autofocus>
+            <button id="send-button" class="send-button">
+                <i class="fas fa-paper-plane"></i> <!-- Font Awesome send icon -->
+            </button>
+        </div>
     </div>
-  </div>
 
-  <!-- ✅ Chat window added here -->
-  <div id="chatWindow" style="display: none;">
-    <div id="messages" class="messages-container"></div>
-    <input type="text" id="chatInput" placeholder="Type a message..." autocomplete="off" />
-  </div>
+    <!-- Emoji Reaction and Reply Popup - Hidden by default -->
+    <div id="action-popup" class="action-popup">
+        <div class="action-options">
+            <div class="emoji-options">
+                <!-- Emojis will be dynamically added here -->
+            </div>
+            <button id="reply-button" class="reply-button">
+                <i class="fas fa-reply"></i> Reply
+            </button>
+        </div>
+    </div>
 
-  <!-- Keep socket and main script at bottom -->
-  <script src="/socket.io/socket.io.js"></script>
-  <script src="script.js"></script>
+    <!-- Socket.IO client library - MUST be loaded before your script.js -->
+    <script src="/socket.io/socket.io.js"></script>
+    <!-- Your main client-side JavaScript logic -->
+    <script src="script.js"></script>
 </body>
 </html>

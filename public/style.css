@@ -1,161 +1,604 @@
-body, html {
-  margin: 0;
-  padding: 0;
-  height: 100%;
-  font-family: Arial, sans-serif;
-  overflow: hidden;
+/* style.css */
+/* This file contains all the styling for your Bro_Chatz application. */
+
+/* Universal box-sizing for consistent layout */
+*, *::before, *::after {
+    box-sizing: border-box;
 }
 
-#hero {
-  position: relative;
-  width: 100%;
-  height: 100vh;
-  background: linear-gradient(-45deg, #ff004c, #ff6600, #9933ff, #00ccff);
-  background-size: 400% 400%;
-  animation: gradientBG 15s ease infinite;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-direction: column;
+/* Base body styling with RGB animation */
+body {
+    margin: 0;
+    font-family: 'Inter', sans-serif; /* Modern, clean font */
+    color: #e0e0e0; /* Light text color for contrast */
+    background: linear-gradient(45deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3);
+    background-size: 400% 400%; /* Larger background for animation */
+    animation: rgb-gradient 15s ease infinite; /* Smooth, infinite RGB animation */
+    display: flex; /* Use flexbox to center content */
+    justify-content: center; /* Center horizontally */
+    align-items: center; /* Center vertically */
+    min-height: 100vh; /* Full viewport height */
+    overflow: hidden; /* Hide overflow from gradient animation */
+    position: relative; /* For absolute positioning of screens */
 }
 
-.overlay {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.3);
-  z-index: 1;
+/* Keyframes for the RGB gradient animation */
+@keyframes rgb-gradient {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
 }
 
-.waves {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  background: repeating-linear-gradient(
-    45deg,
-    rgba(255, 255, 255, 0.05),
-    rgba(255, 255, 255, 0.05) 10px,
-    transparent 10px,
-    transparent 20px
-  );
-  animation: waveMotion 10s linear infinite;
-  z-index: 2;
+/* Screen container styling */
+.screen {
+    position: absolute; /* Position screens absolutely */
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%); /* Center both screens */
+    width: 90%; /* Responsive width */
+    max-width: 450px; /* Max width for larger screens */
+    height: 90vh; /* Responsive height */
+    max-height: 700px; /* Max height for larger screens */
+    background: rgba(0, 0, 0, 0.7); /* Semi-transparent dark background */
+    border-radius: 20px; /* Rounded corners */
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); /* Subtle shadow */
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    opacity: 0; /* Hidden by default */
+    pointer-events: none; /* Disable interaction when hidden */
+    transition: opacity 0.5s ease-in-out; /* Smooth transition for screen changes */
 }
 
-/* HERO TEXT ANIMATION */
-#heroText {
-  text-align: center;
-  position: absolute;
-  top: 12%;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 5;
+.screen.active {
+    opacity: 1; /* Make active screen visible */
+    pointer-events: all; /* Enable interaction when active */
 }
 
-#heroText h1 {
-  font-size: 3.5em;
-  color: #ffffff;
-  font-family: 'Segoe UI', sans-serif;
-  letter-spacing: 2px;
-  animation: zoomIn 2s ease-out forwards;
-  opacity: 0;
+/* Welcome Screen Specifics */
+#welcome-screen {
+    justify-content: center;
+    align-items: center;
+    text-align: center;
 }
 
-#heroText h1 span {
-  display: block;
-  opacity: 0;
-  animation: fadeIn 1s ease forwards;
+.welcome-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%; /* Ensure content takes full height for centering */
 }
 
-#heroText h1 span:nth-child(1) {
-  animation-delay: 0.5s;
-}
-#heroText h1 span:nth-child(2) {
-  animation-delay: 1s;
-}
-#heroText h1 span:nth-child(3) {
-  animation-delay: 1.5s;
+.welcome-text {
+    font-size: clamp(2.5rem, 8vw, 4rem); /* Responsive font size */
+    font-weight: bold;
+    margin: 0;
+    line-height: 1.2;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5); /* Glowing effect */
+    letter-spacing: 2px;
+    animation: neon-glow 1.5s ease-in-out infinite alternate; /* Neon glow animation */
 }
 
-@keyframes zoomIn {
-  0% {
-    transform: scale(0.5);
+.bro-chatz-title {
+    color: #00ffff; /* Cyan color for "BRO_CHATZ" */
+    text-shadow: 0 0 10px #00ffff, 0 0 20px #00ffff, 0 0 30px #00ffff;
+    animation-delay: 0.2s; /* Slight delay for different glow timing */
+}
+
+@keyframes neon-glow {
+    from { text-shadow: 0 0 5px rgba(255, 255, 255, 0.5), 0 0 10px rgba(255, 255, 255, 0.3); }
+    to { text-shadow: 0 0 10px rgba(255, 255, 255, 0.7), 0 0 20px rgba(255, 255, 255, 0.5); }
+}
+
+#username-input {
+    width: 80%;
+    padding: 12px 15px;
+    margin-top: 30px;
+    border: 2px solid #00ffff; /* Cyan border */
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.1); /* Slightly transparent white background */
+    color: #ffffff;
+    font-size: 1.1rem;
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+#username-input::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+#username-input:focus {
+    border-color: #ff00ff; /* Magenta on focus */
+    box-shadow: 0 0 15px rgba(255, 0, 255, 0.7);
+}
+
+.cool-button {
+    background: linear-gradient(45deg, #00ffff, #ff00ff);
+    color: white;
+    padding: 14px 30px;
+    border: none;
+    border-radius: 10px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 20px;
+    box-shadow: 0 5px 15px rgba(0, 255, 255, 0.4);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden; /* For hover effect */
+}
+
+.cool-button:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0, 255, 255, 0.6);
+    background: linear-gradient(45deg, #ff00ff, #00ffff);
+}
+
+.cool-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.2); /* Light shimmer effect */
+    transform: skewX(-30deg);
+    transition: all 0.5s ease;
+}
+
+.cool-button:hover::before {
+    left: 100%;
+}
+
+/* Chat Screen Layout */
+#chat-screen {
+    justify-content: space-between; /* Distribute space */
+}
+
+.chat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    margin-bottom: 15px;
+}
+
+.chat-title {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: #00ffff;
+    text-shadow: 0 0 5px #00ffff;
+    margin: 0;
+}
+
+.online-users-capsule {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(5px); /* Glassy effect */
+    border-radius: 50px;
+    padding: 8px 15px;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.blinking-dot {
+    width: 10px;
+    height: 10px;
+    background-color: #00ff00; /* Green dot */
+    border-radius: 50%;
+    animation: blink 1s infinite alternate; /* Blinking animation */
+}
+
+@keyframes blink {
+    from { opacity: 1; }
+    to { opacity: 0.3; }
+}
+
+.messages-container {
+    flex-grow: 1; /* Takes up available space */
+    overflow-y: auto; /* Scrollable for messages */
+    padding-right: 10px; /* Space for scrollbar */
+    margin-bottom: 15px;
+    scroll-behavior: smooth; /* Smooth scrolling to new messages */
+}
+
+/* Custom scrollbar styling */
+.messages-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+.messages-container::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+}
+
+.messages-container::-webkit-scrollbar-thumb {
+    background: rgba(0, 255, 255, 0.5); /* Cyan scrollbar thumb */
+    border-radius: 10px;
+}
+
+.messages-container::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 255, 255, 0.7);
+}
+
+/* Individual message styling */
+.message-bubble {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 12px;
+    padding: 12px 18px;
+    border-radius: 20px;
+    max-width: 80%; /* Max width for message bubbles */
+    word-wrap: break-word; /* Wrap long words */
+    position: relative; /* For reaction popup positioning */
+    transform: translateY(20px); /* Initial state for delivery animation */
+    opacity: 0; /* Initial state for delivery animation */
+    animation: message-fade-in 0.3s ease-out forwards; /* Delivery animation */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3); /* Subtle shadow */
+    transition: transform 0.2s ease-out, box-shadow 0.2s ease-out; /* For long press feedback */
+}
+
+.message-bubble.long-press-active {
+    transform: scale(1.02); /* Slight scale on long press */
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.5);
+}
+
+/* Highlight for replied message */
+.message-bubble.highlight {
+    animation: highlight-message 1.5s ease-in-out; /* Highlight animation */
+}
+
+@keyframes message-fade-in {
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes highlight-message {
+    0% { background-color: rgba(255, 255, 0, 0.5); transform: scale(1.05); } /* Yellowish glow */
+    50% { background-color: rgba(255, 255, 0, 0.2); transform: scale(1); }
+    100% { background-color: transparent; } /* Return to original or blend out */
+}
+
+
+.message-bubble.admin {
+    background: rgba(255, 255, 0, 0.2); /* Yellowish for admin messages */
+    color: #ffff00;
+    align-self: flex-start; /* Align admin messages to the left */
+    border: 1px solid rgba(255, 255, 0, 0.5);
+    backdrop-filter: blur(8px);
+}
+
+.message-bubble.user-message {
+    /* Background color will be set by JS based on user's assigned color */
+    /* Example: background: rgba(R, G, B, 0.2); */
+    /* Border color will be set by JS based on user's assigned color */
+    /* Example: border: 1px solid rgba(R, G, B, 0.5); */
+    backdrop-filter: blur(8px); /* Glassy effect */
+    align-self: flex-start; /* Default align to left */
+}
+
+.message-bubble .username {
+    font-weight: bold;
+    margin-bottom: 5px;
+    font-size: 0.95rem;
+    opacity: 0.9;
+    /* Color will be slightly darker/lighter version of bubble color */
+}
+
+.message-bubble .message-text {
+    font-size: 1rem;
+    line-height: 1.4;
+}
+
+/* Styling for the replied-to message snippet */
+.message-bubble .reply-snippet {
+    background: rgba(255, 255, 255, 0.1);
+    border-left: 3px solid #00ffff; /* Cyan border */
+    padding: 8px 10px;
+    margin-bottom: 8px;
+    border-radius: 5px;
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.7);
+    cursor: pointer; /* Indicate it's clickable */
+    transition: background 0.2s ease;
+}
+
+.message-bubble .reply-snippet:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.message-bubble .reply-snippet .reply-username {
+    font-weight: bold;
+    color: #00ffff; /* Cyan for replied username */
+    margin-right: 5px;
+}
+
+/* Reaction display under messages */
+.message-reactions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 8px;
+    padding-top: 5px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.reaction-item {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 15px;
+    padding: 4px 8px;
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    animation: pop-in 0.3s ease-out; /* Pop-in animation for new reactions */
+}
+
+@keyframes pop-in {
+    from { transform: scale(0.5); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+/* Typing Indicator */
+.typing-indicator {
+    height: 25px; /* Reserve space */
+    font-size: 0.9rem;
+    color: rgba(0, 255, 255, 0.8); /* Cyan color */
+    font-style: italic;
+    margin-top: -10px; /* Adjust spacing */
+    margin-bottom: 10px;
     opacity: 0;
-  }
-  100% {
+    transition: opacity 0.3s ease-in-out;
+}
+
+.typing-indicator.active {
+    opacity: 1;
+}
+
+/* User Status Notifications (Join/Exit) */
+.user-status-notifications {
+    position: absolute; /* Position above chat area */
+    top: 100px; /* Adjust as needed */
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80%;
+    max-width: 300px;
+    text-align: center;
+    pointer-events: none; /* Do not block clicks */
+    z-index: 10; /* Ensure it's on top */
+}
+
+.user-status-message {
+    background: rgba(0, 255, 255, 0.7); /* Cyan background */
+    color: white;
+    padding: 8px 15px;
+    border-radius: 20px;
+    margin-bottom: 10px;
+    font-size: 0.9rem;
+    opacity: 0;
+    transform: translateY(-20px);
+    animation: slide-fade-in 0.5s ease-out forwards, slide-fade-out 0.5s ease-out 3s forwards; /* In and out animation */
+    box-shadow: 0 2px 8px rgba(0, 255, 255, 0.4);
+}
+
+@keyframes slide-fade-in {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-fade-out {
+    from { opacity: 1; transform: translateY(0); }
+    to { opacity: 0; transform: translateY(-20px); }
+}
+
+
+/* Message Input Area */
+.message-input-area {
+    display: flex;
+    gap: 10px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+#message-input {
+    flex-grow: 1; /* Takes up most of the space */
+    padding: 12px 15px;
+    border: 2px solid #ff00ff; /* Magenta border */
+    border-radius: 25px;
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    font-size: 1rem;
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+#message-input::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+#message-input:focus {
+    border-color: #00ffff; /* Cyan on focus */
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+}
+
+.send-button {
+    background: linear-gradient(45deg, #00ffff, #ff00ff);
+    color: white;
+    border: none;
+    border-radius: 50%; /* Circular button */
+    width: 50px;
+    height: 50px;
+    font-size: 1.2rem;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 4px 10px rgba(0, 255, 255, 0.4);
+    transition: all 0.3s ease;
+}
+
+.send-button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 15px rgba(0, 255, 255, 0.6);
+    background: linear-gradient(45deg, #ff00ff, #00ffff);
+}
+
+.send-button:active {
+    transform: scale(0.95);
+}
+
+/* Spinner animation for send button when AI is loading */
+.send-button .fa-spinner {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Combined Action Popup (Emoji + Reply) Styling */
+.action-popup {
+    position: absolute;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(10px);
+    border-radius: 15px;
+    padding: 10px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.7);
+    z-index: 20; /* Above chat elements */
+    opacity: 0;
+    pointer-events: none;
+    transform: scale(0.8);
+    transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+    display: flex; /* Use flexbox for options */
+    flex-direction: column; /* Stack emoji and reply vertically */
+    gap: 10px; /* Space between emoji and reply sections */
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.action-popup.active {
+    opacity: 1;
+    pointer-events: all;
     transform: scale(1);
-    opacity: 1;
-  }
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-    text-shadow: none;
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-    text-shadow: 0 0 10px #fff, 0 0 20px #00f, 0 0 30px #0ff;
-  }
+.action-options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
 
-/* FORM */
-#formContainer {
-  z-index: 5;
-  margin-top: 280px;
-  text-align: center;
+.emoji-options {
+    display: flex;
+    flex-wrap: wrap; /* Allow emojis to wrap */
+    gap: 8px; /* Space between emojis */
 }
 
-#nameForm label {
-  font-size: 1.2em;
-  color: #fff;
-  font-weight: bold;
+.emoji-option {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-size: 1.5rem; /* Larger emoji size */
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.2s ease;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
-#nameForm input {
-  padding: 10px;
-  margin: 10px 0;
-  border: none;
-  border-radius: 8px;
-  width: 250px;
-  background-color: rgba(255, 255, 255, 0.8);
+.emoji-option:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.1);
 }
 
-#nameForm button {
-  padding: 10px 20px;
-  border: none;
-  background-color: #00ccaa;
-  color: white;
-  font-size: 1em;
-  border-radius: 10px;
-  cursor: pointer;
-  transition: background-color 0.3s;
+.reply-button {
+    background: linear-gradient(45deg, #ff00ff, #00ffff); /* Magenta to Cyan gradient */
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-shadow: 0 3px 10px rgba(255, 0, 255, 0.4);
+    transition: all 0.3s ease;
 }
 
-#nameForm button:hover {
-  background-color: #009977;
+.reply-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 12px rgba(255, 0, 255, 0.6);
+    background: linear-gradient(45deg, #00ffff, #ff00ff); /* Reverse gradient on hover */
 }
 
-/* BACKGROUND ANIMATIONS */
-@keyframes gradientBG {
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
+
+/* Responsive Adjustments */
+@media (max-width: 600px) {
+    .screen {
+        width: 95%;
+        padding: 15px;
+        border-radius: 15px;
+    }
+
+    .welcome-text {
+        font-size: clamp(2rem, 10vw, 3.5rem);
+    }
+
+    #username-input, #message-input {
+        font-size: 1rem;
+        padding: 10px 12px;
+    }
+
+    .cool-button {
+        padding: 12px 25px;
+        font-size: 1.1rem;
+    }
+
+    .chat-title {
+        font-size: 1.5rem;
+    }
+
+    .online-users-capsule {
+        padding: 6px 12px;
+        font-size: 0.8rem;
+    }
+
+    .message-bubble {
+        padding: 10px 15px;
+        font-size: 0.9rem;
+    }
+
+    .message-bubble .username {
+        font-size: 0.9rem;
+    }
+
+    .send-button {
+        width: 45px;
+        height: 45px;
+        font-size: 1.1rem;
+    }
+
+    .emoji-option {
+        font-size: 1.3rem;
+        padding: 6px 10px;
+    }
+
+    .reply-button {
+        padding: 8px 12px;
+        font-size: 0.9rem;
+    }
 }
 
-@keyframes waveMotion {
-  0% {
-    background-position: 0 0;
-  }
-  100% {
-    background-position: 100px 100px;
-  }
+/* Ensure body doesn't cause horizontal scroll on mobile due to gradient */
+html, body {
+    overflow-x: hidden;
 }

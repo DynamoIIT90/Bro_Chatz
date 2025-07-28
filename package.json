@@ -1,25 +1,24 @@
 {
-  "name": "brochst",
+  "name": "brochatz",
   "version": "1.0.0",
-  "main": "index.js",
+  "description": "A real-time chat application with cool UI, animations, and an AI assistant.",
+  "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "chat",
+    "realtime",
+    "socket.io",
+    "node.js",
+    "express",
+    "gemini-api",
+    "ai"
+  ],
+  "author": "AI Assistant",
+  "license": "MIT",
   "dependencies": {
-    "express": "^5.1.0",
-    "socket.io": "^4.8.1"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/DynamoIIT90/Bro_Chatz.git"
-  },
-  "bugs": {
-    "url": "https://github.com/DynamoIIT90/Bro_Chatz/issues"
-  },
-  "homepage": "https://github.com/DynamoIIT90/Bro_Chatz#readme",
-  "description": ""
+    "express": "^4.19.2",
+    "socket.io": "^4.7.5"
+  }
 }
