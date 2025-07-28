@@ -24,7 +24,8 @@ const PORT = process.env.PORT || 3000; // Define the port, use environment varia
 // This is the secure way to handle API keys.
 // For local testing, you will set this in your terminal (e.g., export GEMINI_API_KEY=YOUR_KEY).
 // For Render deployment, you will set this in Render's environment variable settings.
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const GEMINI_API_KEY = 'AIzaSyBm2vvQdkrxplgoa0ri_aSBkfJWCc-rt-0'
+;
 
 // --- Console log to check if API key is loaded ---
 console.log('Server starting. GEMINI_API_KEY:', GEMINI_API_KEY ? '******' + GEMINI_API_KEY.substring(GEMINI_API_KEY.length - 4) : 'NOT SET');
