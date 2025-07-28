@@ -1,105 +1,161 @@
-body {
+body, html {
   margin: 0;
   padding: 0;
-  font-family: 'Segoe UI', sans-serif;
-  background: #111;
-  color: white;
+  height: 100%;
+  font-family: Arial, sans-serif;
+  overflow: hidden;
 }
 
-#welcome-screen {
-  text-align: center;
-  margin-top: 100px;
-  animation: fadeIn 2s;
-}
-
-.welcome-text {
-  font-size: 3em;
-  background: linear-gradient(90deg, red, blue, green);
-  -webkit-background-clip: text;
-  color: transparent;
-  animation: popIn 1s ease forwards;
-}
-
-#name-input {
-  margin-top: 20px;
-  padding: 10px;
-  font-size: 1em;
-  border-radius: 10px;
-  border: none;
-}
-
-#start-chat {
-  margin-top: 10px;
-  padding: 10px 20px;
-  font-size: 1em;
-  background-color: #222;
-  color: white;
-  border: none;
-  border-radius: 10px;
-  cursor: pointer;
-}
-
-#chat-container {
-  display: flex;
-  flex-direction: column;
+#hero {
+  position: relative;
+  width: 100%;
   height: 100vh;
-}
-
-#header {
-  padding: 10px;
-  background: #222;
+  background: linear-gradient(-45deg, #ff004c, #ff6600, #9933ff, #00ccff);
+  background-size: 400% 400%;
+  animation: gradientBG 15s ease infinite;
   display: flex;
-  justify-content: space-between;
-  font-size: 0.8em;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
 }
 
-#messages {
-  flex-grow: 1;
-  overflow-y: auto;
-  padding: 10px;
+.overlay {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 1;
 }
 
-.message {
-  margin: 5px 0;
-  padding: 10px;
-  background: #333;
-  border-radius: 10px;
-  animation: fadeIn 0.3s ease;
+.waves {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.05),
+    rgba(255, 255, 255, 0.05) 10px,
+    transparent 10px,
+    transparent 20px
+  );
+  animation: waveMotion 10s linear infinite;
+  z-index: 2;
 }
 
-form {
-  display: flex;
-  padding: 10px;
-  background: #111;
+/* HERO TEXT ANIMATION */
+#heroText {
+  text-align: center;
+  position: absolute;
+  top: 12%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
 }
 
-#message-input {
-  flex-grow: 1;
-  padding: 10px;
-  border: none;
-  border-radius: 10px;
+#heroText h1 {
+  font-size: 3.5em;
+  color: #ffffff;
+  font-family: 'Segoe UI', sans-serif;
+  letter-spacing: 2px;
+  animation: zoomIn 2s ease-out forwards;
+  opacity: 0;
 }
 
-button {
-  padding: 10px;
-  background-color: #333;
-  color: white;
-  border: none;
-  border-radius: 10px;
-  margin-left: 5px;
-  cursor: pointer;
+#heroText h1 span {
+  display: block;
+  opacity: 0;
+  animation: fadeIn 1s ease forwards;
 }
 
-.hidden {
-  display: none;
+#heroText h1 span:nth-child(1) {
+  animation-delay: 0.5s;
+}
+#heroText h1 span:nth-child(2) {
+  animation-delay: 1s;
+}
+#heroText h1 span:nth-child(3) {
+  animation-delay: 1.5s;
+}
+
+@keyframes zoomIn {
+  0% {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+    text-shadow: none;
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    text-shadow: 0 0 10px #fff, 0 0 20px #00f, 0 0 30px #0ff;
+  }
 }
 
-@keyframes popIn {
-  0% { transform: scale(0); }
-  100% { transform: scale(1); }
+/* FORM */
+#formContainer {
+  z-index: 5;
+  margin-top: 280px;
+  text-align: center;
+}
+
+#nameForm label {
+  font-size: 1.2em;
+  color: #fff;
+  font-weight: bold;
+}
+
+#nameForm input {
+  padding: 10px;
+  margin: 10px 0;
+  border: none;
+  border-radius: 8px;
+  width: 250px;
+  background-color: rgba(255, 255, 255, 0.8);
+}
+
+#nameForm button {
+  padding: 10px 20px;
+  border: none;
+  background-color: #00ccaa;
+  color: white;
+  font-size: 1em;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+#nameForm button:hover {
+  background-color: #009977;
+}
+
+/* BACKGROUND ANIMATIONS */
+@keyframes gradientBG {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes waveMotion {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 100px 100px;
+  }
 }

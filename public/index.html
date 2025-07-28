@@ -1,29 +1,31 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Bro_ChatZ</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div id="welcome-screen">
-    <h1 class="welcome-text">WELCOME</h1>
-    <h1 class="welcome-text">TO</h1>
-    <h1 class="welcome-text">BRO_CHATZ</h1>
-    <input type="text" id="name-input" placeholder="Enter your name">
-    <button id="start-chat">Start Chat</button>
-  </div>
+  <div id="hero">
+    <div class="overlay"></div>
+    <div class="waves"></div>
 
-  <div id="chat-container" class="hidden">
-    <div id="header">
-      <span id="user-count">🔴 0 online</span>
-      <span id="typing-indicator"></span>
+    <div id="heroText">
+      <h1>
+        <span>WELCOME</span><br />
+        <span>TO</span><br />
+        <span>BRO_CHATZ</span>
+      </h1>
     </div>
-    <div id="messages"></div>
-    <form id="send-container">
-      <input type="text" id="message-input" autocomplete="off" placeholder="Type your message...">
-      <button type="submit">Send</button>
-    </form>
+
+    <div id="formContainer">
+      <form id="nameForm">
+        <label for="username">Enter your name to start chatting:</label>
+        <input type="text" id="username" placeholder="Your name" required />
+        <button type="submit">Start Chat</button>
+      </form>
+    </div>
   </div>
 
   <script src="/socket.io/socket.io.js"></script>

@@ -2,61 +2,49 @@ const express = require('express');
 const app = express();
 const http = require('http').createServer(app);
 const io = require('socket.io')(http);
-const path = require('path');
 
-app.use(express.static(path.join(__dirname, 'public')));
+const port = process.env.PORT || 3000;
+app.use(express.static('public'));
 
-const users = {};
-const colors = {};
-
-function getRandomDarkColor() {
-  const letters = '0123456789ABCDEF';
-  let color = '#';
-  for (let i = 0; i < 6; i++) {
-    color += letters[Math.floor(Math.random() * 10)];
-  }
-  return color;
-}
+let users = {};
+let typingUsers = [];
 
 io.on('connection', (socket) => {
-  socket.on('new-user', (name) => {
+  let username = '';
+
+  socket.on('setUsername', (name) => {
+    username = name;
     users[socket.id] = name;
-    colors[socket.id] = getRandomDarkColor();
-    io.emit('user-connected', name);
-    io.emit('update-user-count', Object.keys(users).length);
+    io.emit('updateUserCount', Object.keys(users).length);
+    io.emit('userNotification', { user: name, action: 'joined' });
   });
 
-  socket.on('chat-message', (data) => {
-    const name = users[socket.id];
-    const color = colors[socket.id];
-    if (name) {
-      io.emit('chat-message', { name, message: data.message, color });
+  socket.on('chat message', (data) => {
+    io.emit('chat message', data);
+  });
+
+  socket.on('typing', (name) => {
+    if (!typingUsers.includes(name)) {
+      typingUsers.push(name);
+      io.emit('typingStatus', typingUsers);
     }
   });
 
-  socket.on('typing', () => {
-    const name = users[socket.id];
-    if (name) {
-      socket.broadcast.emit('typing', name);
-    }
-  });
-
-  socket.on('stop-typing', () => {
-    const name = users[socket.id];
-    if (name) {
-      socket.broadcast.emit('stop-typing', name);
-    }
+  socket.on('stopTyping', (name) => {
+    typingUsers = typingUsers.filter(u => u !== name);
+    io.emit('typingStatus', typingUsers);
   });
 
   socket.on('disconnect', () => {
-    const name = users[socket.id];
     delete users[socket.id];
-    delete colors[socket.id];
-    io.emit('user-disconnected', name);
-    io.emit('update-user-count', Object.keys(users).length);
+    io.emit('updateUserCount', Object.keys(users).length);
+    if (username) {
+      typingUsers = typingUsers.filter(u => u !== username);
+      io.emit('userNotification', { user: username, action: 'left' });
+    }
   });
 });
 
-http.listen(3000, () => {
-  console.log('Server running on http://localhost:3000');
+http.listen(port, () => {
+  console.log(`Server running on http://localhost:${port}`);
 });
