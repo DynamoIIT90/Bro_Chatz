@@ -28,6 +28,13 @@
     </div>
   </div>
 
+  <!-- ✅ Chat window added here -->
+  <div id="chatWindow" style="display: none;">
+    <div id="messages" class="messages-container"></div>
+    <input type="text" id="chatInput" placeholder="Type a message..." autocomplete="off" />
+  </div>
+
+  <!-- Keep socket and main script at bottom -->
   <script src="/socket.io/socket.io.js"></script>
   <script src="script.js"></script>
 </body>
