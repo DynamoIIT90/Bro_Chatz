@@ -26,7 +26,7 @@ const PORT = process.env.PORT || 3000; // Define the port, use environment varia
 // For Render deployment, you will set this in Render's environment variable settings.
 // IMPORTANT: Replace 'AIzaSyBm2vvQdkrxplgo0ri_aSBkfJWCc-rt-0' with a secure environment variable.
 // This key is currently hardcoded for demonstration but should be sourced from process.env.
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyBm2vvQdkrxplgo0ri_aSBkfJWCc-rt-0'; // USE process.env.GEMINI_API_KEY for production
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyC0vAo8oWOb22IGUy2J5TrzrKFxobpMj5g'; // USE process.env.GEMINI_API_KEY for production
 
 // --- Console log to check if API key is loaded ---
 console.log('Server starting. GEMINI_API_KEY:', GEMINI_API_KEY ? '******' + GEMINI_API_KEY.substring(GEMINI_API_KEY.length - 4) : 'NOT SET');

@@ -1,605 +1,473 @@
-/* style.css */
-/* This file contains all the styling for your Bro_Chatz application. */
-
-/* Universal box-sizing for consistent layout */
-*, *::before, *::after {
-    box-sizing: border-box;
-}
-
-/* Base body styling with RGB animation */
+/* General Styling */
 body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     margin: 0;
-    font-family: 'Inter', sans-serif; /* Modern, clean font */
-    color: #e0e0e0; /* Light text color for contrast */
-    background: linear-gradient(45deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3);
-    background-size: 400% 400%; /* Larger background for animation */
-    animation: rgb-gradient 15s ease infinite; /* Smooth, infinite RGB animation */
-    display: flex; /* Use flexbox to center content */
-    justify-content: center; /* Center horizontally */
-    align-items: center; /* Center vertically */
-    min-height: 100vh; /* Full viewport height */
-    overflow: hidden; /* Hide overflow from gradient animation */
-    position: relative; /* For absolute positioning of screens */
-}
-
-/* Keyframes for the RGB gradient animation */
-@keyframes rgb-gradient {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
-}
-
-/* Screen container styling */
-.screen {
-    position: absolute; /* Position screens absolutely */
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%); /* Center both screens */
-    width: 90%; /* Responsive width */
-    max-width: 450px; /* Max width for larger screens */
-    height: 90vh; /* Responsive height */
-    max-height: 700px; /* Max height for larger screens */
-    background: rgba(0, 0, 0, 0.7); /* Semi-transparent dark background */
-    border-radius: 20px; /* Rounded corners */
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); /* Subtle shadow */
     display: flex;
-    flex-direction: column;
-    padding: 20px;
-    opacity: 0; /* Hidden by default */
-    pointer-events: none; /* Disable interaction when hidden */
-    transition: opacity 0.5s ease-in-out; /* Smooth transition for screen changes */
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #1a2a3a, #0a1a2a); /* Dark gradient background */
+    color: #f0f0f0; /* Light text for contrast */
+    overflow: hidden; /* Hide scrollbars that might appear due to popups initially */
 }
 
-.screen.active {
-    opacity: 1; /* Make active screen visible */
-    pointer-events: all; /* Enable interaction when active */
-}
-
-/* Welcome Screen Specifics */
+/* --- Welcome Screen --- */
 #welcome-screen {
-    justify-content: center;
-    align-items: center;
+    background-color: rgba(0, 0, 0, 0.7);
+    padding: 40px;
+    border-radius: 15px;
+    box-shadow: 0 0 30px rgba(0, 255, 255, 0.5); /* Cyan glow */
     text-align: center;
+    max-width: 400px;
+    width: 90%;
+    transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+    opacity: 0; /* Start hidden */
+    transform: translateY(20px); /* Start slightly below */
+    display: none; /* Hidden by default, activated by JS */
 }
 
-.welcome-content {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100%; /* Ensure content takes full height for centering */
+#welcome-screen.active {
+    opacity: 1;
+    transform: translateY(0);
+    display: block; /* Show when active */
 }
 
-.welcome-text {
-    font-size: clamp(2.5rem, 8vw, 4rem); /* Responsive font size */
-    font-weight: bold;
-    margin: 0;
-    line-height: 1.2;
-    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5); /* Glowing effect */
-    letter-spacing: 2px;
-    animation: neon-glow 1.5s ease-in-out infinite alternate; /* Neon glow animation */
-}
-
-.bro-chatz-title {
-    color: #00ffff; /* Cyan color for "BRO_CHATZ" */
-    text-shadow: 0 0 10px #00ffff, 0 0 20px #00ffff, 0 0 30px #00ffff;
-    animation-delay: 0.2s; /* Slight delay for different glow timing */
-}
-
-@keyframes neon-glow {
-    from { text-shadow: 0 0 5px rgba(255, 255, 255, 0.5), 0 0 10px rgba(255, 255, 255, 0.3); }
-    to { text-shadow: 0 0 10px rgba(255, 255, 255, 0.7), 0 0 20px rgba(255, 255, 255, 0.5); }
+#welcome-screen h1 {
+    color: #00ffff; /* Cyan color for heading */
+    margin-bottom: 25px;
+    font-size: 2.2em;
+    text-shadow: 0 0 10px rgba(0, 255, 255, 0.7);
 }
 
 #username-input {
-    width: 80%;
-    padding: 12px 15px;
-    margin-top: 30px;
-    border: 2px solid #00ffff; /* Cyan border */
-    border-radius: 10px;
-    background: rgba(255, 255, 255, 0.1); /* Slightly transparent white background */
-    color: #ffffff;
-    font-size: 1.1rem;
+    width: calc(100% - 20px);
+    padding: 12px;
+    margin-bottom: 20px;
+    border: 2px solid #00ffff;
+    border-radius: 8px;
+    background-color: #0d1a2a;
+    color: #f0f0f0;
+    font-size: 1.1em;
     outline: none;
-    transition: all 0.3s ease;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 #username-input::placeholder {
-    color: rgba(255, 255, 255, 0.6);
+    color: #aaa;
 }
 
 #username-input:focus {
-    border-color: #ff00ff; /* Magenta on focus */
-    box-shadow: 0 0 15px rgba(255, 0, 255, 0.7);
+    border-color: #00aaff;
+    box-shadow: 0 0 15px rgba(0, 170, 255, 0.7);
 }
 
-.cool-button {
-    background: linear-gradient(45deg, #00ffff, #ff00ff);
-    color: white;
+#username-input.shake {
+    animation: shake 0.3s;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-5px); }
+    40%, 80% { transform: translateX(5px); }
+}
+
+#start-chat-btn {
+    background-color: #00ffff;
+    color: #0d1a2a;
     padding: 14px 30px;
     border: none;
-    border-radius: 10px;
-    font-size: 1.2rem;
+    border-radius: 8px;
+    font-size: 1.2em;
     font-weight: bold;
     cursor: pointer;
-    margin-top: 20px;
+    transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
     box-shadow: 0 5px 15px rgba(0, 255, 255, 0.4);
-    transition: all 0.3s ease;
-    position: relative;
-    overflow: hidden; /* For hover effect */
 }
 
-.cool-button:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 20px rgba(0, 255, 255, 0.6);
-    background: linear-gradient(45deg, #ff00ff, #00ffff);
+#start-chat-btn:hover {
+    background-color: #00aaff;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 170, 255, 0.6);
 }
 
-.cool-button::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: rgba(255, 255, 255, 0.2); /* Light shimmer effect */
-    transform: skewX(-30deg);
-    transition: all 0.5s ease;
-}
-
-.cool-button:hover::before {
-    left: 100%;
-}
-
-/* Chat Screen Layout */
+/* --- Chat Screen --- */
 #chat-screen {
-    justify-content: space-between; /* Distribute space */
+    display: none; /* Hidden by default, activated by JS */
+    background-color: rgba(0, 0, 0, 0.7);
+    border-radius: 15px;
+    box-shadow: 0 0 30px rgba(0, 255, 255, 0.5);
+    width: 95%;
+    max-width: 800px;
+    height: 90vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* For inner scrolling */
+    transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+    opacity: 0; /* Start hidden */
+    transform: translateY(20px); /* Start slightly below */
 }
 
+#chat-screen.active {
+    opacity: 1;
+    transform: translateY(0);
+    display: flex; /* Show when active */
+}
+
+/* --- Chat Header --- */
 .chat-header {
+    background-color: rgba(13, 26, 42, 0.8); /* Darker header */
+    padding: 15px 20px;
+    border-bottom: 1px solid #00ffff;
+    border-radius: 15px 15px 0 0;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding-bottom: 15px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-    margin-bottom: 15px;
-}
-
-.chat-title {
-    font-size: 1.8rem;
-    font-weight: bold;
     color: #00ffff;
-    text-shadow: 0 0 5px #00ffff;
-    margin: 0;
+    font-size: 1.1em;
+    text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
 }
 
-.online-users-capsule {
-    background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(5px); /* Glassy effect */
-    border-radius: 50px;
-    padding: 8px 15px;
-    font-size: 0.9rem;
+.chat-header h2 {
+    margin: 0;
+    font-size: 1.4em;
+}
+
+.online-users {
     display: flex;
     align-items: center;
-    gap: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
-.blinking-dot {
-    width: 10px;
-    height: 10px;
-    background-color: #00ff00; /* Green dot */
-    border-radius: 50%;
-    animation: blink 1s infinite alternate; /* Blinking animation */
+.online-users i {
+    margin-right: 8px;
+    color: #00ff00; /* Green for online indicator */
 }
 
-@keyframes blink {
-    from { opacity: 1; }
-    to { opacity: 0.3; }
-}
-
-.messages-container {
+/* --- Messages Container --- */
+#messages {
     flex-grow: 1; /* Takes up available space */
-    overflow-y: auto; /* Scrollable for messages */
-    padding-right: 10px; /* Space for scrollbar */
-    margin-bottom: 15px;
-    scroll-behavior: smooth; /* Smooth scrolling to new messages */
+    padding: 20px;
+    overflow-y: auto; /* Enable scrolling for messages */
+    scroll-behavior: smooth;
+    background-color: rgba(0, 0, 0, 0.5); /* Slightly transparent background */
+    display: flex;
+    flex-direction: column;
 }
 
-/* Custom scrollbar styling */
-.messages-container::-webkit-scrollbar {
+#messages::-webkit-scrollbar {
     width: 8px;
 }
 
-.messages-container::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.1);
+#messages::-webkit-scrollbar-track {
+    background: #0d1a2a;
     border-radius: 10px;
 }
 
-.messages-container::-webkit-scrollbar-thumb {
-    background: rgba(0, 255, 255, 0.5); /* Cyan scrollbar thumb */
+#messages::-webkit-scrollbar-thumb {
+    background: #00ffff;
     border-radius: 10px;
 }
 
-.messages-container::-webkit-scrollbar-thumb:hover {
-    background: rgba(0, 255, 255, 0.7);
+#messages::-webkit-scrollbar-thumb:hover {
+    background: #00aaff;
 }
 
-/* Individual message styling */
+/* --- Message Bubble --- */
 .message-bubble {
-    display: flex;
-    flex-direction: column;
-    margin-bottom: 12px;
-    padding: 12px 18px;
-    border-radius: 20px;
-    max-width: 80%; /* Max width for message bubbles */
-    word-wrap: break-word; /* Wrap long words */
-    position: relative; /* For reaction popup positioning */
-    transform: translateY(20px); /* Initial state for delivery animation */
-    opacity: 0; /* Initial state for delivery animation */
-    animation: message-fade-in 0.3s ease-out forwards; /* Delivery animation */
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3); /* Subtle shadow */
-    transition: transform 0.2s ease-out, box-shadow 0.2s ease-out; /* For long press feedback */
+    background-color: rgba(255, 255, 255, 0.1);
+    padding: 10px 15px;
+    border-radius: 15px;
+    margin-bottom: 10px;
+    max-width: 70%;
+    align-self: flex-start; /* Default alignment */
+    position: relative; /* For reactions */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+    word-wrap: break-word; /* Ensure long words break */
+    transition: background-color 0.2s ease, transform 0.1s ease; /* For long press visual feedback */
+    border: 1px solid transparent; /* Default border */
 }
 
-.message-bubble.long-press-active {
-    transform: scale(1.02); /* Slight scale on long press */
-    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.5);
+.message-bubble.admin {
+    background-color: rgba(255, 255, 0, 0.1); /* Yellowish for admin */
+    border: 1px solid rgba(255, 255, 0, 0.5);
+    align-self: center; /* Center admin messages */
+    text-align: center;
+    max-width: 90%; /* Admin messages can be wider */
 }
 
-/* Highlight for replied message */
+/* Highlight animation for reply snippet click */
 .message-bubble.highlight {
-    animation: highlight-message 1.5s ease-in-out; /* Highlight animation */
-}
-
-@keyframes message-fade-in {
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
+    animation: highlight-message 1.5s ease-in-out;
 }
 
 @keyframes highlight-message {
-    0% { background-color: rgba(255, 255, 0, 0.5); transform: scale(1.05); } /* Yellowish glow */
-    50% { background-color: rgba(255, 255, 0, 0.2); transform: scale(1); }
-    100% { background-color: transparent; } /* Return to original or blend out */
+    0% {
+        box-shadow: 0 0 15px 5px rgba(0, 255, 255, 0.7); /* Bright cyan glow */
+        transform: scale(1.02);
+    }
+    50% {
+        box-shadow: 0 0 20px 8px rgba(0, 255, 255, 0.5);
+        transform: scale(1.03);
+    }
+    100% {
+        box-shadow: none;
+        transform: scale(1);
+    }
 }
 
-
-.message-bubble.admin {
-    background: rgba(255, 255, 0, 0.2); /* Yellowish for admin messages */
-    color: #ffff00;
-    align-self: flex-start; /* Align admin messages to the left */
-    border: 1px solid rgba(255, 255, 0, 0.5);
-    backdrop-filter: blur(8px);
-}
-
-.message-bubble.user-message {
-    /* Background color will be set by JS based on user's assigned color */
-    /* Example: background: rgba(R, G, B, 0.2); */
-    /* Border color will be set by JS based on user's assigned color */
-    /* Example: border: 1px solid rgba(R, G, B, 0.5); */
-    backdrop-filter: blur(8px); /* Glassy effect */
-    align-self: flex-start; /* Default align to left */
-}
 
 .message-bubble .username {
     font-weight: bold;
     margin-bottom: 5px;
-    font-size: 0.95rem;
-    opacity: 0.9;
-    /* Color will be slightly darker/lighter version of bubble color */
+    display: block;
+    word-wrap: break-word;
 }
 
 .message-bubble .message-text {
-    font-size: 1rem;
-    line-height: 1.4;
+    display: block;
+    word-wrap: break-word;
 }
 
-/* Styling for the replied-to message snippet */
-.message-bubble .reply-snippet {
-    background: rgba(255, 255, 255, 0.1);
-    border-left: 3px solid #00ffff; /* Cyan border */
-    padding: 8px 10px;
+/* Reply Snippet Styling */
+.reply-snippet {
+    background-color: rgba(255, 255, 255, 0.08);
+    border-left: 3px solid #00ffff;
+    padding: 5px 10px;
     margin-bottom: 8px;
     border-radius: 5px;
-    font-size: 0.85rem;
-    color: rgba(255, 255, 255, 0.7);
-    cursor: pointer; /* Indicate it's clickable */
-    transition: background 0.2s ease;
+    font-size: 0.85em;
+    color: #bbb;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
 }
 
-.message-bubble .reply-snippet:hover {
-    background: rgba(255, 255, 255, 0.15);
+.reply-snippet:hover {
+    background-color: rgba(255, 255, 255, 0.15);
 }
 
-.message-bubble .reply-snippet .reply-username {
+.reply-snippet .reply-username {
     font-weight: bold;
-    color: #00ffff; /* Cyan for replied username */
-    margin-right: 5px;
+    color: #00ffff; /* Cyan color for replied username */
 }
 
-/* Reaction display under messages */
-.message-reactions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 5px;
-    margin-top: 8px;
-    padding-top: 5px;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.reaction-item {
-    background: rgba(255, 255, 255, 0.15);
-    border-radius: 15px;
-    padding: 4px 8px;
-    font-size: 0.8rem;
-    display: flex;
-    align-items: center;
-    gap: 3px;
-    animation: pop-in 0.3s ease-out; /* Pop-in animation for new reactions */
-}
-
-@keyframes pop-in {
-    from { transform: scale(0.5); opacity: 0; }
-    to { transform: scale(1); opacity: 1; }
-}
-
-/* Typing Indicator */
-.typing-indicator {
-    height: 25px; /* Reserve space */
-    font-size: 0.9rem;
-    color: rgba(0, 255, 255, 0.8); /* Cyan color */
+/* --- Typing Indicator --- */
+#typing-indicator {
+    padding: 5px 20px;
+    color: #aaa;
     font-style: italic;
-    margin-top: -10px; /* Adjust spacing */
-    margin-bottom: 10px;
-    opacity: 0;
+    min-height: 20px; /* Reserve space */
     transition: opacity 0.3s ease-in-out;
+    opacity: 0;
+    text-align: left; /* Align to left like messages */
 }
 
-.typing-indicator.active {
+#typing-indicator.active {
     opacity: 1;
 }
 
-/* User Status Notifications (Join/Exit) */
-.user-status-notifications {
-    position: absolute; /* Position above chat area */
-    top: 100px; /* Adjust as needed */
-    left: 50%;
-    transform: translateX(-50%);
-    width: 80%;
-    max-width: 300px;
-    text-align: center;
-    pointer-events: none; /* Do not block clicks */
-    z-index: 10; /* Ensure it's on top */
-}
-
-.user-status-message {
-    background: rgba(0, 255, 255, 0.7); /* Cyan background */
-    color: white;
-    padding: 8px 15px;
-    border-radius: 20px;
-    margin-bottom: 10px;
-    font-size: 0.9rem;
-    opacity: 0;
-    transform: translateY(-20px);
-    /* Changed animation delay for fade-out to 6s, for a total of 6.5s visibility */
-    animation: slide-fade-in 0.5s ease-out forwards, slide-fade-out 0.5s ease-out 6s forwards;
-    box-shadow: 0 2px 8px rgba(0, 255, 255, 0.4);
-}
-
-@keyframes slide-fade-in {
-    from { opacity: 0; transform: translateY(-20px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes slide-fade-out {
-    from { opacity: 1; transform: translateY(0); }
-    to { opacity: 0; transform: translateY(-20px); }
-}
-
-
-/* Message Input Area */
+/* --- Message Input Area --- */
 .message-input-area {
+    background-color: rgba(13, 26, 42, 0.8);
+    padding: 15px 20px;
+    border-top: 1px solid #00ffff;
+    border-radius: 0 0 15px 15px;
     display: flex;
-    gap: 10px;
-    padding-top: 10px;
-    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    align-items: center;
 }
 
 #message-input {
-    flex-grow: 1; /* Takes up most of the space */
-    padding: 12px 15px;
-    border: 2px solid #ff00ff; /* Magenta border */
+    flex-grow: 1;
+    padding: 12px;
+    border: 2px solid #00ffff;
     border-radius: 25px;
-    background: rgba(255, 255, 255, 0.1);
-    color: #ffffff;
-    font-size: 1rem;
+    background-color: #0d1a2a;
+    color: #f0f0f0;
+    font-size: 1.1em;
     outline: none;
-    transition: all 0.3s ease;
+    margin-right: 10px;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 #message-input::placeholder {
-    color: rgba(255, 255, 255, 0.6);
+    color: #aaa;
 }
 
 #message-input:focus {
-    border-color: #00ffff; /* Cyan on focus */
-    box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+    border-color: #00aaff;
+    box-shadow: 0 0 15px rgba(0, 170, 255, 0.7);
 }
 
-.send-button {
-    background: linear-gradient(45deg, #00ffff, #ff00ff);
-    color: white;
+#send-button {
+    background-color: #00ffff;
+    color: #0d1a2a;
     border: none;
-    border-radius: 50%; /* Circular button */
-    width: 50px;
-    height: 50px;
-    font-size: 1.2rem;
-    cursor: pointer;
+    border-radius: 50%;
+    width: 45px;
+    height: 45px;
     display: flex;
     justify-content: center;
     align-items: center;
-    box-shadow: 0 4px 10px rgba(0, 255, 255, 0.4);
-    transition: all 0.3s ease;
+    font-size: 1.3em;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+    box-shadow: 0 2px 10px rgba(0, 255, 255, 0.4);
 }
 
-.send-button:hover {
-    transform: scale(1.05);
-    box-shadow: 0 6px 15px rgba(0, 255, 255, 0.6);
-    background: linear-gradient(45deg, #ff00ff, #00ffff);
+#send-button:hover {
+    background-color: #00aaff;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 170, 255, 0.6);
 }
 
-.send-button:active {
-    transform: scale(0.95);
+#send-button:disabled {
+    background-color: #333;
+    color: #888;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
 }
 
-/* Spinner animation for send button when AI is loading */
-.send-button .fa-spinner {
-    animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-/* Combined Action Popup (Emoji + Reply) Styling */
-.action-popup {
-    position: absolute;
-    background: rgba(0, 0, 0, 0.8);
-    backdrop-filter: blur(10px);
-    border-radius: 15px;
+/* --- Reaction Pop-up (renamed to Action Popup) --- */
+#action-popup {
+    position: fixed;
+    background-color: rgba(0, 0, 0, 0.85);
+    border: 1px solid #00ffff;
+    border-radius: 10px;
     padding: 10px;
-    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.7);
-    z-index: 20; /* Above chat elements */
+    box-shadow: 0 5px 20px rgba(0, 255, 255, 0.7);
+    z-index: 1000;
+    display: flex;
+    flex-direction: column; /* Stack options vertically */
+    gap: 8px; /* Space between emoji options and reply button */
+    transform: scale(0.8) translateY(20px);
     opacity: 0;
     pointer-events: none;
-    transform: scale(0.8);
-    transition: opacity 0.2s ease-out, transform 0.2s ease-out;
-    display: flex; /* Use flexbox for options */
-    flex-direction: column; /* Stack emoji and reply vertically */
-    gap: 10px; /* Space between emoji and reply sections */
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    transition: transform 0.2s ease-out, opacity 0.2s ease-out;
 }
 
-.action-popup.active {
+#action-popup.active {
+    transform: scale(1) translateY(0);
     opacity: 1;
-    pointer-events: all;
-    transform: scale(1);
-}
-
-.action-options {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+    pointer-events: auto;
 }
 
 .emoji-options {
     display: flex;
     flex-wrap: wrap; /* Allow emojis to wrap */
-    gap: 8px; /* Space between emojis */
+    gap: 5px; /* Space between emojis */
 }
 
 .emoji-option {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 10px;
-    padding: 8px 12px;
-    font-size: 1.5rem; /* Larger emoji size */
     cursor: pointer;
-    transition: background 0.2s ease, transform 0.2s ease;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    font-size: 1.8em;
+    padding: 5px;
+    border-radius: 5px;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    background-color: rgba(255, 255, 255, 0.05); /* Subtle background */
 }
 
 .emoji-option:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background-color: rgba(255, 255, 255, 0.2);
     transform: scale(1.1);
 }
 
-.reply-button {
-    background: linear-gradient(45deg, #ff00ff, #00ffff); /* Magenta to Cyan gradient */
+#reply-button {
+    background-color: #00aaff;
     color: white;
-    padding: 10px 15px;
+    padding: 8px 12px;
     border: none;
-    border-radius: 10px;
-    font-size: 1rem;
-    font-weight: bold;
+    border-radius: 5px;
     cursor: pointer;
+    font-size: 0.9em;
+    font-weight: bold;
+    transition: background-color 0.2s ease;
+    text-align: center;
+}
+
+#reply-button:hover {
+    background-color: #0088cc;
+}
+
+/* --- Message Reaction Display --- */
+.message-reactions {
+    display: flex;
+    flex-wrap: wrap; /* Allow reactions to wrap */
+    gap: 5px;
+    margin-top: 8px;
+    font-size: 0.8em;
+}
+
+.reaction-item {
+    background-color: rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    padding: 3px 8px;
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 8px;
-    box-shadow: 0 3px 10px rgba(255, 0, 255, 0.4);
-    transition: all 0.3s ease;
+    gap: 3px;
+    color: #eee;
 }
 
-.reply-button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 12px rgba(255, 0, 255, 0.6);
-    background: linear-gradient(45deg, #00ffff, #ff00ff); /* Reverse gradient on hover */
+.reaction-item small {
+    font-size: 0.9em;
+    color: #bbb;
+}
+
+/* Visual feedback for long press */
+.message-bubble.long-press-active {
+    transform: scale(1.02);
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.7);
 }
 
 
-/* Responsive Adjustments */
-@media (max-width: 600px) {
-    .screen {
-        width: 95%;
-        padding: 15px;
-        border-radius: 15px;
-    }
-
-    .welcome-text {
-        font-size: clamp(2rem, 10vw, 3.5rem);
-    }
-
-    #username-input, #message-input {
-        font-size: 1rem;
-        padding: 10px 12px;
-    }
-
-    .cool-button {
-        padding: 12px 25px;
-        font-size: 1.1rem;
-    }
-
-    .chat-title {
-        font-size: 1.5rem;
-    }
-
-    .online-users-capsule {
-        padding: 6px 12px;
-        font-size: 0.8rem;
-    }
-
-    .message-bubble {
-        padding: 10px 15px;
-        font-size: 0.9rem;
-    }
-
-    .message-bubble .username {
-        font-size: 0.9rem;
-    }
-
-    .send-button {
-        width: 45px;
-        height: 45px;
-        font-size: 1.1rem;
-    }
-
-    .emoji-option {
-        font-size: 1.3rem;
-        padding: 6px 10px;
-    }
-
-    .reply-button {
-        padding: 8px 12px;
-        font-size: 0.9rem;
-    }
+/* --- User Status Notifications --- */
+#user-status-notifications {
+    position: fixed; /* Fixed position relative to viewport */
+    bottom: 20px; /* Start near the bottom */
+    left: 50%;
+    transform: translateX(-50%); /* Center horizontally */
+    display: flex;
+    flex-direction: column; /* Stack notifications vertically */
+    align-items: center;
+    z-index: 999; /* Below pop-ups, above chat */
+    pointer-events: none; /* Allow clicks to pass through */
+    max-height: 80vh; /* Prevent notifications from taking up too much screen */
+    overflow: hidden; /* Hide overflowing notifications if too many stack up */
 }
 
-/* Ensure body doesn't cause horizontal scroll on mobile due to gradient */
-html, body {
-    overflow-x: hidden;
+.user-status-message {
+    background-color: rgba(0, 255, 255, 0.8); /* Cyan background */
+    color: #0d1a2a; /* Dark text */
+    padding: 10px 20px;
+    border-radius: 25px;
+    margin-bottom: 10px; /* Space between notifications */
+    font-size: 1.1em;
+    font-weight: bold;
+    box-shadow: 0 5px 15px rgba(0, 255, 255, 0.5);
+    text-align: center;
+    white-space: nowrap; /* Prevent text wrapping */
+    animation: status-popup-animation 12s forwards; /* 12-second animation */
+    /* Use 'forwards' to keep the element at the end state of the animation (opacity: 0) */
+}
+
+/* NEW: Keyframe animation for status popups */
+@keyframes status-popup-animation {
+    0% {
+        opacity: 0;
+        transform: translateY(50px) scale(0.9); /* Start lower, slightly transparent, slightly smaller */
+    }
+    5% {
+        opacity: 1;
+        transform: translateY(0) scale(1); /* Quick fade in and move to initial position */
+    }
+    90% {
+        opacity: 1;
+        transform: translateY(-80px) scale(1); /* Stay visible and move up */
+    }
+    95% {
+        opacity: 0.5;
+        transform: translateY(-120px) scale(1.1); /* Begin fading out and slightly scaling up */
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(-150px) scale(1.2); /* Fully faded out, moved further up, larger ("burst" illusion) */
+    }
 }

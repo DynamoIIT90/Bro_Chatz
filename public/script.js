@@ -57,7 +57,7 @@ function adjustColor(color, percent) {
     return `rgb(${Math.round(newR)}, ${Math.round(newG)}, ${Math.round(newB)})`;
 }
 
-// Function to display user status notifications (join/exit)
+// Function to display user status notifications (join/exit, and now replies)
 function displayUserStatus(msg) {
     const notificationDiv = document.createElement('div');
     notificationDiv.classList.add('user-status-message');
@@ -65,10 +65,10 @@ function displayUserStatus(msg) {
     userStatusNotifications.appendChild(notificationDiv);
 
     // Remove the notification after its animation finishes
+    // The animation is now 12s, and `forwards` keeps it at the end state (faded out).
+    // So, we can just remove it when the animation completes.
     notificationDiv.addEventListener('animationend', () => {
-        // Ensure the element is only removed once all animations are done (especially the 'forwards' ones)
-        // A small delay ensures the transition completes visually before removal
-        setTimeout(() => notificationDiv.remove(), 100);
+        notificationDiv.remove();
     });
 }
 
