@@ -27,23 +27,29 @@ body {
     width: 100%;
     max-width: 420px; /* Limits width on larger screens */
     height: 100vh; /* Full height for mobile responsiveness */
-    display: none; /* Hidden by default */
+    display: flex; /* Always flex, control visibility with opacity/pointer-events */
     flex-direction: column;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
     background-color: #fff;
     border-radius: 8px;
     overflow: hidden; /* Ensures content doesn't spill out */
-    transition: opacity 0.3s ease; /* Smooth transition */
+    transition: opacity 0.3s ease, transform 0.3s ease; /* Smooth transition */
     position: absolute; /* To allow stacking on top of each other */
     top: 0;
     left: 50%;
-    transform: translateX(-50%);
+    transform: translateX(-50%) scale(0.95); /* Slightly scale down when inactive */
+    opacity: 0;
+    pointer-events: none; /* Prevents interaction when hidden */
+    z-index: 1; /* Default z-index */
 }
 
 .screen.active {
-    display: flex !important; /* Force display flex when active */
     opacity: 1;
+    pointer-events: auto; /* Allows interaction when active */
+    transform: translateX(-50%) scale(1); /* Full size when active */
+    z-index: 2; /* Bring active screen to front */
 }
+
 
 /* Welcome Screen Specifics */
 #welcome-screen {
@@ -243,22 +249,21 @@ body {
     100% { background-color: initial; box-shadow: none; }
 }
 
-/* Username color - Ensure inline 'style' attribute overrides by being less specific here */
+/* Username color - This class should *not* set color to allow inline style for RGB */
 .message-bubble .username {
     font-weight: bold;
     margin-bottom: 4px;
     font-size: 0.85em;
-    /* No 'color' property here. This allows inline style (e.g., style="color: rgb(123,45,67);") to be the main source of color for dynamic usernames. */
+    /* NO `color` property here. This allows inline styles like `style="color: rgb(R,G,B);"` to dictate the color. */
 }
 
 /* Specific colors for 'me' and 'admin' can still exist if desired */
 .message-bubble.me .username {
-    color: #2e7d32;
+    color: #2e7d32; /* Example: a darker green for your own username */
 }
 .message-bubble.admin .username {
-    color: #0288d1;
+    color: #0288d1; /* Example: a blue for admin usernames */
 }
-
 
 /* Reply Snippet within messages */
 .reply-snippet {
@@ -663,7 +668,7 @@ body.dark-theme .user-status-message.leave {
         box-shadow: none;
         max-width: 100%;
         left: 0;
-        transform: none;
+        transform: translateX(0) scale(1); /* No transform on mobile */
     }
     .welcome-card {
         padding: 20px;

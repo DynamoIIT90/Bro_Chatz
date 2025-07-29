@@ -6,7 +6,6 @@ let welcomeScreen;
 let chatScreen;
 let usernameInput;
 let startChatBtn;
-let chatHeader;
 let themeToggleBtn;
 let onlineUsersCount;
 let messagesContainer;
@@ -51,7 +50,6 @@ document.addEventListener('DOMContentLoaded', () => {
     chatScreen = document.getElementById('chat-screen');
     usernameInput = document.getElementById('username-input');
     startChatBtn = document.getElementById('start-chat-btn');
-    chatHeader = document.querySelector('.chat-header'); // This may not be directly used for header but generally exists
     themeToggleBtn = document.getElementById('theme-toggle-btn');
     onlineUsersCount = document.getElementById('online-users-count');
     messagesContainer = document.getElementById('messages');
@@ -328,6 +326,7 @@ function displayMessage(username, message, timestamp, type = 'user', messageId =
     `).join('');
 
     // Dynamically apply color style to username span if a color is provided
+    // This allows the RGB colors to come through from the server
     const usernameSpanStyle = color ? `style="color: ${color};"` : '';
 
     messageBubble.innerHTML = `
@@ -545,10 +544,12 @@ socket.on('username_set', (data) => {
     myAssignedColor = data.color; // Store the color for 'me' messages
 
     // --- Screen Switching Logic ---
-    if (welcomeScreen && chatScreen && messageInput) {
+    if (welcomeScreen && chatScreen) {
         welcomeScreen.classList.remove('active'); // Hide welcome screen
         chatScreen.classList.add('active'); // Show chat screen
-        messageInput.focus(); // Focus the message input
+        if (messageInput) {
+            messageInput.focus(); // Focus the message input
+        }
         console.log('Switched to chat screen. Message input focused.');
     } else {
         console.error('Could not find welcomeScreen, chatScreen, or messageInput to switch views.');
