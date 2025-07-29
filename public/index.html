@@ -4,13 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bro_Chatz</title>
-    <!-- Link to your custom stylesheet for all the cool UI and RGB effects -->
     <link rel="stylesheet" href="style.css">
-    <!-- Font Awesome for icons (e.g., send icon, emoji icons, spinner) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
-    <!-- Welcome Screen - This is the first thing users see -->
     <div id="welcome-screen" class="screen active">
         <div class="welcome-content">
             <h1 class="welcome-text">WELCOME</h1>
@@ -21,52 +18,48 @@
         </div>
     </div>
 
-    <!-- Chat Screen - This is the main chat interface -->
     <div id="chat-screen" class="screen">
         <header class="chat-header">
             <h2 class="chat-title">Bro_Chatz</h2>
-            <!-- Capsule for online users -->
+            <button id="theme-toggle-btn" class="theme-toggle-button">
+                <i class="fas fa-moon"></i> </button>
             <div class="online-users-capsule">
                 <span id="online-users-count">0</span> Online
                 <span class="blinking-dot"></span>
             </div>
         </header>
 
-        <!-- Area for displaying messages -->
         <div id="messages" class="messages-container">
-            <!-- Messages will be dynamically added here by script.js -->
-        </div>
+            </div>
 
-        <!-- Area for "xyz is typing..." notifications -->
         <div id="typing-indicator" class="typing-indicator"></div>
 
-        <!-- Area for "xyz entered/exited" notifications -->
         <div id="user-status-notifications" class="user-status-notifications"></div>
 
-        <!-- Message input area -->
+        <div id="reply-snippet-container" class="reply-snippet-container">
+            <span id="reply-snippet-text" class="reply-snippet-text"></span>
+            <button id="cancel-reply-btn" class="cancel-reply-btn">
+                <i class="fas fa-times"></i> </button>
+        </div>
+
         <div class="message-input-area">
             <input type="text" id="message-input" placeholder="Type a message..." autofocus>
             <button id="send-button" class="send-button">
-                <i class="fas fa-paper-plane"></i> <!-- Font Awesome send icon -->
-            </button>
+                <i class="fas fa-paper-plane"></i> </button>
         </div>
     </div>
 
-    <!-- Emoji Reaction and Reply Popup - Hidden by default -->
     <div id="action-popup" class="action-popup">
         <div class="action-options">
             <div class="emoji-options">
-                <!-- Emojis will be dynamically added here -->
-            </div>
+                </div>
             <button id="reply-button" class="reply-button">
                 <i class="fas fa-reply"></i> Reply
             </button>
         </div>
     </div>
 
-    <!-- Socket.IO client library - MUST be loaded before your script.js -->
     <script src="/socket.io/socket.io.js"></script>
-    <!-- Your main client-side JavaScript logic -->
     <script src="script.js"></script>
 </body>
 </html>

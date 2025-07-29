@@ -50,6 +50,16 @@ body.dark-theme #welcome-screen h1 {
     text-shadow: 0 0 10px rgba(0, 255, 255, 0.7);
 }
 
+body.dark-theme .welcome-text { /* Ensure welcome screen text is visible in dark theme */
+    color: #eee;
+}
+
+body.dark-theme .welcome-text.bro-chatz-title { /* Specific for the title */
+    color: #00ffff;
+    text-shadow: 0 0 10px rgba(0, 255, 255, 0.7);
+}
+
+
 body.dark-theme #username-input,
 body.dark-theme #message-input {
     border: 2px solid #00ffff;
@@ -70,7 +80,8 @@ body.dark-theme #message-input:focus {
 
 body.dark-theme #start-chat-btn,
 body.dark-theme #send-button,
-body.dark-theme #reply-button {
+body.dark-theme #reply-button,
+body.dark-theme #cancel-reply-btn { /* Added cancel-reply-btn */
     background-color: #00ffff;
     color: #0d1a2a;
     box-shadow: 0 5px 15px rgba(0, 255, 255, 0.4);
@@ -78,7 +89,8 @@ body.dark-theme #reply-button {
 
 body.dark-theme #start-chat-btn:hover,
 body.dark-theme #send-button:hover,
-body.dark-theme #reply-button:hover {
+body.dark-theme #reply-button:hover,
+body.dark-theme #cancel-reply-btn:hover { /* Added cancel-reply-btn */
     background-color: #00aaff;
     box-shadow: 0 8px 20px rgba(0, 170, 255, 0.6);
 }
@@ -87,12 +99,19 @@ body.dark-theme .chat-header,
 body.dark-theme .message-input-area {
     background-color: rgba(13, 26, 42, 0.8);
     border-color: #00ffff;
-    color: #00ffff;
+    color: #00ffff; /* Ensure chat title is cyan */
+}
+body.dark-theme .chat-header .chat-title {
+    color: #00ffff; /* Explicitly set chat title color */
 }
 
-body.dark-theme .online-users i {
-    color: #00ff00; /* Green for online indicator */
+body.dark-theme .online-users-capsule { /* Adjusted for the new capsule class */
+    color: #00ffff; /* Cyan for online users count */
 }
+body.dark-theme .online-users-capsule .blinking-dot { /* Blinking dot color */
+    background-color: #00ff00;
+}
+
 
 body.dark-theme #messages {
     background-color: rgba(0, 0, 0, 0.5);
@@ -113,11 +132,16 @@ body.dark-theme #messages::-webkit-scrollbar-thumb:hover {
 body.dark-theme .message-bubble {
     background-color: rgba(255, 255, 255, 0.1);
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+    color: #f0f0f0; /* Ensure message text is light */
+}
+body.dark-theme .message-bubble .username {
+    color: #00ffff; /* Ensure username is cyan */
 }
 
 body.dark-theme .message-bubble.admin {
     background-color: rgba(255, 255, 0, 0.1);
     border: 1px solid rgba(255, 255, 0, 0.5);
+    color: #ffff00; /* Ensure admin text is yellow */
 }
 
 body.dark-theme .message-bubble.highlight {
@@ -148,6 +172,26 @@ body.dark-theme .reply-snippet {
 body.dark-theme .reply-snippet .reply-username {
     color: #00ffff;
 }
+
+/* Dark theme for the new reply snippet container */
+body.dark-theme .reply-snippet-container {
+    background-color: rgba(13, 26, 42, 0.8);
+    border-top: 1px solid #00ffff;
+    color: #00ffff;
+}
+body.dark-theme .reply-snippet-container .reply-snippet-text {
+    color: #00ffff;
+}
+body.dark-theme .reply-snippet-container .reply-username {
+    color: #00ffff;
+}
+body.dark-theme .cancel-reply-btn {
+    color: #00ffff;
+}
+body.dark-theme .cancel-reply-btn:hover {
+    color: #ff0000; /* Red on hover for cancel */
+}
+
 
 body.dark-theme #typing-indicator {
     color: #aaa;
@@ -217,6 +261,15 @@ body.dark-theme .user-status-message {
     font-size: 2.2em;
     text-shadow: none;
 }
+/* Ensure the specific welcome texts are visible in light theme */
+.welcome-text {
+    color: #333;
+}
+.welcome-text.bro-chatz-title {
+    color: #66ccff; /* Default title color */
+    text-shadow: 0 0 10px rgba(102, 204, 255, 0.7);
+}
+
 
 #username-input {
     width: calc(100% - 20px);
@@ -271,25 +324,30 @@ body.dark-theme .user-status-message {
 
 /* --- Chat Screen --- */
 #chat-screen {
-    display: none; /* Hidden by default, activated by JS */
+    /* `display: none;` should be removed here for JS to handle visibility via opacity/transform */
+    /* Updated below */
     background-color: rgba(255, 255, 255, 0.95); /* Default theme background */
     border-radius: 15px;
     box-shadow: 0 0 25px rgba(0, 0, 0, 0.15);
     width: 95%;
     max-width: 800px;
     height: 90vh;
-    display: flex;
+    display: flex; /* Ensure it's flex by default, but hidden by opacity/transform */
     flex-direction: column;
     overflow: hidden; /* For inner scrolling */
     transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
     opacity: 0; /* Start hidden */
     transform: translateY(20px); /* Start slightly below */
+    /* Add `pointer-events: none;` to prevent interaction when hidden */
+    pointer-events: none;
 }
 
 #chat-screen.active {
     opacity: 1;
     transform: translateY(0);
-    display: flex; /* Show when active */
+    /* `display: flex;` is no longer needed here as it's default. */
+    /* Re-enable pointer events when active */
+    pointer-events: auto;
 }
 
 /* --- Chat Header --- */
@@ -299,19 +357,19 @@ body.dark-theme .user-status-message {
     border-bottom: 1px solid #eee; /* Default border */
     border-radius: 15px 15px 0 0;
     display: flex;
+    /* Changed justify-content to space-between to spread items */
     justify-content: space-between;
     align-items: center;
     color: #555; /* Default header text color */
     font-size: 1.1em;
     text-shadow: none;
-    position: relative; /* For theme toggle button positioning */
+    /* Removed `position: relative;` as theme toggle will be part of flex now */
 }
 
 /* --- Theme Toggle Button --- */
 #theme-toggle-btn {
-    position: absolute;
-    top: 15px; /* Adjust as needed */
-    left: 15px; /* Adjust as needed */
+    /* Removed absolute positioning to integrate into flexbox */
+    /* Adjusted padding for better click area if needed, or keep existing for icon-only */
     background: none;
     border: none;
     font-size: 1.5em;
@@ -319,6 +377,9 @@ body.dark-theme .user-status-message {
     color: #666; /* Default color */
     transition: color 0.3s ease;
     z-index: 100;
+    /* Added margin-right to separate from chat title if placed directly next to it */
+    margin-right: auto; /* Pushes the title to the center */
+    padding: 5px; /* Add some padding for touch target */
 }
 
 #theme-toggle-btn:hover {
@@ -333,16 +394,31 @@ body.dark-theme #theme-toggle-btn:hover {
     color: #00aaff;
 }
 
-
-.online-users {
+/* --- Online Users Capsule (Updated class name) --- */
+.online-users-capsule {
     display: flex;
     align-items: center;
+    background-color: rgba(0, 0, 0, 0.05); /* Subtle background for capsule */
+    border-radius: 20px;
+    padding: 5px 12px;
+    font-size: 0.9em;
+    font-weight: bold;
+    color: #555; /* Default text color */
 }
 
-.online-users i {
-    margin-right: 8px;
-    color: #008800; /* Default green for online indicator */
+.online-users-capsule .blinking-dot {
+    width: 10px;
+    height: 10px;
+    background-color: #00ff00; /* Green for online */
+    border-radius: 50%;
+    margin-left: 8px;
+    animation: blink 1.5s infinite;
 }
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+
 
 /* --- Messages Container --- */
 #messages {
@@ -386,6 +462,7 @@ body.dark-theme #theme-toggle-btn:hover {
     word-wrap: break-word; /* Ensure long words break */
     transition: background-color 0.2s ease, transform 0.1s ease; /* For long press visual feedback */
     border: 1px solid #eee; /* Default border */
+    color: #333; /* Default message text color */
 }
 
 .message-bubble.admin {
@@ -394,6 +471,7 @@ body.dark-theme #theme-toggle-btn:hover {
     align-self: center; /* Center admin messages */
     text-align: center;
     max-width: 90%; /* Admin messages can be wider */
+    color: #665500; /* Darker text for admin messages */
 }
 
 /* Highlight animation for reply snippet click (Updated to match default theme) */
@@ -422,6 +500,7 @@ body.dark-theme #theme-toggle-btn:hover {
     margin-bottom: 5px;
     display: block;
     word-wrap: break-word;
+    color: #6699ff; /* Default username color */
 }
 
 .message-bubble .message-text {
@@ -429,7 +508,7 @@ body.dark-theme #theme-toggle-btn:hover {
     word-wrap: break-word;
 }
 
-/* Reply Snippet Styling */
+/* Reply Snippet Styling (for when a message is replied to) */
 .reply-snippet {
     background-color: rgba(0, 0, 0, 0.03); /* Default subtle background */
     border-left: 3px solid #99ccff; /* Default lighter blue border */
@@ -465,6 +544,52 @@ body.dark-theme #theme-toggle-btn:hover {
 #typing-indicator.active {
     opacity: 1;
 }
+
+/* --- Reply Snippet Container (above message input) - NEWLY ADDED --- */
+#reply-snippet-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: rgba(255, 255, 255, 0.9); /* Default subtle background */
+    padding: 10px 20px;
+    border-top: 1px solid #eee;
+    border-bottom: 1px solid #eee;
+    font-size: 0.95em;
+    color: #555;
+    /* Hidden by default, activated by JS */
+    opacity: 0;
+    height: 0; /* Initially collapse height */
+    overflow: hidden; /* Hide overflow content */
+    transition: opacity 0.3s ease, height 0.3s ease;
+}
+
+#reply-snippet-container.active {
+    opacity: 1;
+    height: auto; /* Expand height when active */
+    padding: 10px 20px; /* Re-apply padding when active */
+}
+
+#reply-snippet-container .reply-snippet-text {
+    flex-grow: 1;
+    margin-right: 10px;
+    color: #6699ff; /* Highlight replied text/username */
+}
+
+#cancel-reply-btn {
+    background: none;
+    border: none;
+    color: #888; /* Default color for cancel icon */
+    font-size: 1.2em;
+    cursor: pointer;
+    padding: 5px;
+    transition: color 0.2s ease, transform 0.2s ease;
+}
+
+#cancel-reply-btn:hover {
+    color: #ff0000; /* Red on hover */
+    transform: scale(1.1);
+}
+
 
 /* --- Message Input Area --- */
 .message-input-area {
