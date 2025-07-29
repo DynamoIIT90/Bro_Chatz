@@ -32,6 +32,9 @@ const LONG_PRESS_THRESHOLD = 500; // 500 milliseconds for a long press
 let lastTouchStartTime; // To help distinguish between a quick tap and a long press
 let lastTouchTargetMessage = null; // Stores the message bubble element currently being long-pressed
 
+// FIX: Declare currentReplyMessageId as a global variable
+let currentReplyMessageId = null; // Stores the ID of the message being replied to
+
 // --- Event Listeners and Initial Setup (Ensures DOM is ready) ---
 document.addEventListener('DOMContentLoaded', () => {
     // Select all DOM elements once the document's structure is fully loaded
@@ -55,8 +58,12 @@ document.addEventListener('DOMContentLoaded', () => {
     userStatusNotifications = document.getElementById('user-status-notifications');
 
     // --- Initial UI Setup ---
-    welcomeScreen.classList.add('active'); // Ensure welcome screen is visible initially
-    usernameInput.focus(); // Automatically focus the username input for convenience
+    if (welcomeScreen) {
+        welcomeScreen.classList.add('active'); // Ensure welcome screen is visible initially
+    }
+    if (usernameInput) {
+        usernameInput.focus(); // Automatically focus the username input for convenience
+    }
 
     // Load user's theme preference from browser's local storage
     loadThemePreference();
@@ -64,60 +71,81 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Core Event Listeners ---
 
     // Handle "Start Chat" button click
-    startChatBtn.addEventListener('click', () => {
-        const enteredUsername = usernameInput.value.trim();
-        if (enteredUsername) {
-            currentUsername = enteredUsername;
-            socket.emit('set_username', currentUsername); // Send the chosen username to the server
-            welcomeScreen.classList.remove('active'); // Hide the welcome screen
+    if (startChatBtn) {
+        startChatBtn.addEventListener('click', () => {
+            const enteredUsername = usernameInput ? usernameInput.value.trim() : '';
+            if (enteredUsername) {
+                currentUsername = enteredUsername;
+                socket.emit('set_username', currentUsername); // Send the chosen username to the server
+                if (welcomeScreen) {
+                    welcomeScreen.classList.remove('active'); // Hide the welcome screen
+                }
 
-            // Add a slight delay before showing chat screen for a smoother CSS transition
-            setTimeout(() => {
-                chatScreen.classList.add('active'); // Show the main chat screen
-                messageInput.focus(); // Focus the message input field
-            }, 500); // This delay should match the transition duration in style.css for welcome-screen
+                // Add a slight delay before showing chat screen for a smoother CSS transition
+                setTimeout(() => {
+                    if (chatScreen) {
+                        chatScreen.classList.add('active'); // Show the main chat screen
+                    }
+                    if (messageInput) {
+                        messageInput.focus(); // Focus the message input field
+                    }
+                }, 500); // This delay should match the transition duration in style.css for welcome-screen
         } else {
             // Provide visual feedback if username is empty
-            usernameInput.placeholder = 'Please enter a name!';
-            usernameInput.classList.add('shake'); // Add a shake animation
-            setTimeout(() => usernameInput.classList.remove('shake'), 500); // Remove shake after animation
+            if (usernameInput) {
+                usernameInput.placeholder = 'Please enter a name!';
+                usernameInput.classList.add('shake'); // Add a shake animation
+                setTimeout(() => usernameInput.classList.remove('shake'), 500); // Remove shake after animation
+            }
         }
     });
+    }
 
     // Allow starting chat by pressing Enter in the username input field
-    usernameInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            startChatBtn.click(); // Simulate a click on the "Start Chat" button
-        }
-    });
+    if (usernameInput) {
+        usernameInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                if (startChatBtn) {
+                    startChatBtn.click(); // Simulate a click on the "Start Chat" button
+                }
+            }
+        });
+    }
 
     // Toggle between light and dark themes
-    themeToggleBtn.addEventListener('click', toggleTheme);
+    if (themeToggleBtn) {
+        themeToggleBtn.addEventListener('click', toggleTheme);
+    }
 
     // Send message when the send button is clicked
-    sendButton.addEventListener('click', sendMessage);
+    if (sendButton) {
+        sendButton.addEventListener('click', sendMessage);
+    }
 
     // Send message when Enter key is pressed in the message input (unless Shift is held)
-    messageInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) { // Shift+Enter will allow a new line
-            e.preventDefault(); // Prevent default Enter key behavior (like new line)
-            sendMessage();
-        }
-    });
+    if (messageInput) {
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) { // Shift+Enter will allow a new line
+                e.preventDefault(); // Prevent default Enter key behavior (like new line)
+                sendMessage();
+            }
+        });
 
-    // --- Typing Indicator Logic ---
-    messageInput.addEventListener('input', () => {
-        if (messageInput.value.trim() !== '') {
-            socket.emit('typing'); // Notify server that user is typing
-            clearTimeout(typingTimer); // Reset the timer
-            typingTimer = setTimeout(() => {
-                socket.emit('stop_typing'); // Notify server when typing stops
-            }, TYPING_DELAY);
-        } else {
-            clearTimeout(typingTimer);
-            socket.emit('stop_typing'); // Ensure stop_typing is sent if input is cleared
-        }
-    });
+        // --- Typing Indicator Logic ---
+        messageInput.addEventListener('input', () => {
+            if (messageInput.value.trim() !== '') {
+                socket.emit('typing'); // Notify server that user is typing
+                clearTimeout(typingTimer); // Reset the timer
+                typingTimer = setTimeout(() => {
+                    socket.emit('stop_typing'); // Notify server when typing stops
+                }, TYPING_DELAY);
+            } else {
+                clearTimeout(typingTimer);
+                socket.emit('stop_typing'); // Ensure stop_typing is sent if input is cleared
+            }
+        });
+    }
+
 
     // --- Reply Feature Event Listeners ---
     if (cancelReplyBtn) { // Defensive check in case HTML element is missing
@@ -129,8 +157,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (lastTouchTargetMessage) {
                 // Get details of the message being replied to
                 const messageId = lastTouchTargetMessage.dataset.messageId;
-                const username = lastTouchTargetMessage.querySelector('.username').textContent;
-                const text = lastTouchTargetMessage.querySelector('.message-text').textContent;
+                // Defensive checks for child elements
+                const usernameEl = lastTouchTargetMessage.querySelector('.username');
+                const messageTextEl = lastTouchTargetMessage.querySelector('.message-text');
+
+                const username = usernameEl ? usernameEl.textContent : 'Unknown';
+                const text = messageTextEl ? messageTextEl.textContent : 'No content';
+
                 activateReplyMode(messageId, username, text); // Enter reply mode
                 hideActionPopup(); // Hide the context menu
             }
@@ -140,24 +173,27 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Emoji Reaction Feature ---
     // Populate the emoji options within the action popup
     const emojis = ['👍', '❤️', '😂', '😮', '😢', '😡', '🙏']; // A selection of common emojis
-    emojis.forEach(emoji => {
-        const span = document.createElement('span');
-        span.classList.add('emoji-option');
-        span.textContent = emoji;
-        span.addEventListener('click', () => {
-            if (lastTouchTargetMessage) {
-                const messageId = lastTouchTargetMessage.dataset.messageId;
-                socket.emit('react_to_message', messageId, emoji); // Send reaction to server
-                hideActionPopup(); // Hide the context menu
-            }
+    if (emojiOptionsContainer) {
+        emojis.forEach(emoji => {
+            const span = document.createElement('span');
+            span.classList.add('emoji-option');
+            span.textContent = emoji;
+            span.addEventListener('click', () => {
+                if (lastTouchTargetMessage) {
+                    const messageId = lastTouchTargetMessage.dataset.messageId;
+                    socket.emit('react_to_message', messageId, emoji); // Send reaction to server
+                    hideActionPopup(); // Hide the context menu
+                }
+            });
+            emojiOptionsContainer.appendChild(span); // Add emoji option to the popup
         });
-        emojiOptionsContainer.appendChild(span); // Add emoji option to the popup
-    });
+    }
+
 
     // --- Global Click Listener to Hide Action Popup ---
     // Hides the reply/reaction popup if the user clicks anywhere outside of it or the target message
     document.addEventListener('click', (event) => {
-        if (actionPopup.classList.contains('active')) {
+        if (actionPopup && actionPopup.classList.contains('active')) {
             // Check if the click occurred outside the popup AND outside the message bubble
             // that triggered the popup (to prevent immediate re-triggering on accidental click)
             if (!actionPopup.contains(event.target) && (!lastTouchTargetMessage || !lastTouchTargetMessage.contains(event.target))) {
@@ -169,12 +205,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Long Press / Right Click Event Handling (Delegated to messagesContainer) ---
     // These events are handled on the parent 'messagesContainer' for efficiency
     // and to work with dynamically added messages.
-    messagesContainer.addEventListener('mousedown', handlePointerDown);
-    messagesContainer.addEventListener('mouseup', handlePointerUp);
-    messagesContainer.addEventListener('mousemove', handlePointerMove);
-    messagesContainer.addEventListener('touchstart', handlePointerDown);
-    messagesContainer.addEventListener('touchend', handlePointerUp);
-    messagesContainer.addEventListener('touchmove', handlePointerMove);
+    if (messagesContainer) {
+        messagesContainer.addEventListener('mousedown', handlePointerDown);
+        messagesContainer.addEventListener('mouseup', handlePointerUp);
+        messagesContainer.addEventListener('mousemove', handlePointerMove);
+        messagesContainer.addEventListener('touchstart', handlePointerDown);
+        messagesContainer.addEventListener('touchend', handlePointerUp);
+        messagesContainer.addEventListener('touchmove', handlePointerMove);
+    }
 });
 
 // --- Theme Toggling Functions ---
@@ -182,7 +220,9 @@ function toggleTheme() {
     document.body.classList.toggle('dark-theme'); // Add/remove 'dark-theme' class to body
     const isDark = document.body.classList.contains('dark-theme');
     // Change icon based on current theme
-    themeToggleBtn.innerHTML = isDark ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+    if (themeToggleBtn) { // Defensive check
+        themeToggleBtn.innerHTML = isDark ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+    }
     localStorage.setItem('theme', isDark ? 'dark' : 'light'); // Save theme preference in local storage
 }
 
@@ -190,16 +230,20 @@ function loadThemePreference() {
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme === 'dark') {
         document.body.classList.add('dark-theme');
-        themeToggleBtn.innerHTML = '<i class="fas fa-sun"></i>';
+        if (themeToggleBtn) { // Defensive check
+            themeToggleBtn.innerHTML = '<i class="fas fa-sun"></i>';
+        }
     } else {
         document.body.classList.remove('dark-theme');
-        themeToggleBtn.innerHTML = '<i class="fas fa-moon"></i>';
+        if (themeToggleBtn) { // Defensive check
+            themeToggleBtn.innerHTML = '<i class="fas fa-moon"></i>';
+        }
     }
 }
 
 // --- Message Sending Function ---
 function sendMessage() {
-    const messageText = messageInput.value.trim();
+    const messageText = messageInput ? messageInput.value.trim() : '';
     if (messageText) {
         // If currentReplyMessageId is set, send as a reply
         if (currentReplyMessageId) {
@@ -209,13 +253,17 @@ function sendMessage() {
             // Otherwise, send as a regular message
             socket.emit('chat_message', messageText);
         }
-        messageInput.value = ''; // Clear the message input field
+        if (messageInput) {
+            messageInput.value = ''; // Clear the message input field
+        }
         socket.emit('stop_typing'); // Ensure typing indicator is turned off
     }
 }
 
 // --- Message Display Function ---
 function displayMessage(username, message, timestamp, type = 'user', messageId = null, replyTo = null, reactions = {}) {
+    if (!messagesContainer) return; // Exit if container not found
+
     const messageBubble = document.createElement('div');
     messageBubble.classList.add('message-bubble');
     if (type === 'admin') {
@@ -272,28 +320,40 @@ function displayMessage(username, message, timestamp, type = 'user', messageId =
 // --- Reply Mode Functions ---
 function activateReplyMode(messageId, username, text) {
     currentReplyMessageId = messageId; // Store the ID of the message being replied to
-    replySnippetContainer.classList.add('active'); // Show the reply snippet UI
-    // Display a short preview of the message being replied to
-    replySnippetText.innerHTML = `Replying to: <span class="reply-username">@${username}</span> "${text.substring(0, 50)}${text.length > 50 ? '...' : ''}"`;
-    messageInput.focus(); // Focus the message input field
+    if (replySnippetContainer && replySnippetText) { // Defensive check
+        replySnippetContainer.classList.add('active'); // Show the reply snippet UI
+        // Display a short preview of the message being replied to
+        replySnippetText.innerHTML = `Replying to: <span class="reply-username">@${username}</span> "${text.substring(0, 50)}${text.length > 50 ? '...' : ''}"`;
+    }
+    if (messageInput) {
+        messageInput.focus(); // Focus the message input field
+    }
 }
 
 function cancelReply() {
     currentReplyMessageId = null; // Clear the reply mode
-    replySnippetContainer.classList.remove('active'); // Hide the reply snippet UI
-    replySnippetText.textContent = ''; // Clear the reply snippet text
-    messageInput.focus(); // Keep focus on the message input
+    if (replySnippetContainer && replySnippetText) { // Defensive check added here
+        replySnippetContainer.classList.remove('active'); // Hide the reply snippet UI
+        replySnippetText.textContent = ''; // Clear the reply snippet text
+    }
+    if (messageInput) {
+        messageInput.focus(); // Keep focus on the message input
+    }
 }
 
 // --- Action Popup Functions (for reactions/replies context menu) ---
 function showActionPopup(x, y) {
+    if (!actionPopup) return; // Defensive check
+
     actionPopup.style.left = `${x}px`;
     actionPopup.style.top = `${y}px`;
     actionPopup.classList.add('active'); // Make the popup visible
 }
 
 function hideActionPopup() {
-    actionPopup.classList.remove('active'); // Hide the popup
+    if (actionPopup) { // Defensive check
+        actionPopup.classList.remove('active'); // Hide the popup
+    }
     if (lastTouchTargetMessage) {
         lastTouchTargetMessage.classList.remove('long-press-active'); // Remove long-press highlight
     }
@@ -319,16 +379,21 @@ function handlePointerDown(e) {
     }
 
     lastTouchTargetMessage = targetBubble; // Store the target message bubble
-    lastTouchTargetMessage.classList.add('long-press-active'); // Add immediate visual feedback
+    if (lastTouchTargetMessage) { // Defensive check
+        lastTouchTargetMessage.classList.add('long-press-active'); // Add immediate visual feedback
+    }
+
 
     // Store initial touch/mouse position to detect movement
-    lastTouchTargetMessage.dataset.initialX = e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
-    lastTouchTargetMessage.dataset.initialY = e.clientY || (e.touches && e.touches[0] ? e.touches[0].clientY : 0);
+    if (lastTouchTargetMessage) { // Defensive check
+        lastTouchTargetMessage.dataset.initialX = e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
+        lastTouchTargetMessage.dataset.initialY = e.clientY || (e.touches && e.touches[0] ? e.touches[0].clientY : 0);
+    }
 
     lastTouchStartTime = Date.now(); // Record the start time of the press
     longPressTimer = setTimeout(() => {
         // If the timer completes, it's a long press
-        if (lastTouchTargetMessage) {
+        if (lastTouchTargetMessage && actionPopup) { // Defensive check for actionPopup
             const rect = lastTouchTargetMessage.getBoundingClientRect(); // Get position of the message bubble
             let popupX, popupY;
 
@@ -368,14 +433,13 @@ function handlePointerUp(e) {
         if (Date.now() - lastTouchStartTime < LONG_PRESS_THRESHOLD) {
              lastTouchTargetMessage.classList.remove('long-press-active');
              hideActionPopup(); // Ensure popup is hidden on a short tap
-             lastTouchTargetMessage = null; // Clear reference for short taps
         }
         // If it was a long press that triggered the popup, lastTouchTargetMessage
         // will be cleared by hideActionPopup when the user interacts with the popup or clicks away.
     }
 
     // Clear initial position data
-    if (lastTouchTargetMessage) {
+    if (lastTouchTargetMessage && lastTouchTargetMessage.dataset) {
         delete lastTouchTargetMessage.dataset.initialX;
         delete lastTouchTargetMessage.dataset.initialY;
     }
@@ -384,8 +448,8 @@ function handlePointerUp(e) {
 function handlePointerMove(e) {
     // If a long press timer is active and there's a target message
     if (longPressTimer && lastTouchTargetMessage) {
-        const initialX = parseFloat(lastTouchTargetMessage.dataset.initialX);
-        const initialY = parseFloat(lastTouchTargetMessage.dataset.initialY);
+        const initialX = parseFloat(lastTouchTargetMessage.dataset.initialX || '0'); // Default to '0' if undefined
+        const initialY = parseFloat(lastTouchTargetMessage.dataset.initialY || '0'); // Default to '0' if undefined
 
         const currentX = e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
         const currentY = e.clientY || (e.touches && e.touches[0] ? e.touches[0].clientY : 0);
@@ -396,14 +460,17 @@ function handlePointerMove(e) {
         if (distance > 10) { // A threshold of 10 pixels movement
             clearTimeout(longPressTimer);
             longPressTimer = null; // Reset timer
-            lastTouchTargetMessage.classList.remove('long-press-active');
-            // We don't clear lastTouchTargetMessage here; it will be handled by pointerUp or hideActionPopup
+            if (lastTouchTargetMessage) {
+                lastTouchTargetMessage.classList.remove('long-press-active');
+            }
         }
     }
 }
 
 // --- User Status Notification Functions ---
 function displayUserStatus(message, type = 'join') {
+    if (!userStatusNotifications) return; // Exit if container not found
+
     const statusDiv = document.createElement('div');
     statusDiv.classList.add('user-status-message');
     statusDiv.textContent = message;
@@ -457,7 +524,7 @@ socket.on('admin_message', (message) => {
 
 // Handle 'typing' event from other users
 socket.on('typing', (username) => {
-    if (username !== currentUsername) { // Only show for other users, not self
+    if (username !== currentUsername && typingIndicator) { // Only show for other users, not self, and check indicator
         typingIndicator.textContent = `${username} is typing...`;
         typingIndicator.classList.add('active');
     }
@@ -465,11 +532,11 @@ socket.on('typing', (username) => {
 
 // Handle 'stop_typing' event from other users
 socket.on('stop_typing', (username) => {
-    if (username !== currentUsername) {
+    if (username !== currentUsername && typingIndicator) {
         typingIndicator.classList.remove('active');
         // A simple check to clear text: ensures it's cleared only if no other 'is typing' text exists
         // (For multiple typers, a more sophisticated array-based approach would be needed)
-        if (!typingIndicator.textContent.includes(' is typing')) {
+        if (!typingIndicator.textContent.includes(' is typing')) { // Ensures we don't clear if another user is typing
             typingIndicator.textContent = '';
         }
     }
@@ -485,14 +552,16 @@ socket.on('user_status', (data) => {
 
 // Handle message reaction updates
 socket.on('message_reacted', ({ messageId, updatedReactions }) => {
-    const messageBubble = messagesContainer.querySelector(`[data-message-id="${messageId}"]`);
-    if (messageBubble) {
-        const reactionsContainer = messageBubble.querySelector('.message-reactions');
-        if (reactionsContainer) {
-            // Rebuild the reactions HTML based on the updated counts
-            reactionsContainer.innerHTML = Object.entries(updatedReactions).map(([emoji, count]) => `
-                <span class="reaction-item">${emoji} <small>${count}</small></span>
-            `).join('');
+    if (messagesContainer) { // Defensive check
+        const messageBubble = messagesContainer.querySelector(`[data-message-id="${messageId}"]`);
+        if (messageBubble) {
+            const reactionsContainer = messageBubble.querySelector('.message-reactions');
+            if (reactionsContainer) {
+                // Rebuild the reactions HTML based on the updated counts
+                reactionsContainer.innerHTML = Object.entries(updatedReactions).map(([emoji, count]) => `
+                    <span class="reaction-item">${emoji} <small>${count}</small></span>
+                `).join('');
+            }
         }
     }
 });

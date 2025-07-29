@@ -324,8 +324,6 @@ body.dark-theme .user-status-message {
 
 /* --- Chat Screen --- */
 #chat-screen {
-    /* `display: none;` should be removed here for JS to handle visibility via opacity/transform */
-    /* Updated below */
     background-color: rgba(255, 255, 255, 0.95); /* Default theme background */
     border-radius: 15px;
     box-shadow: 0 0 25px rgba(0, 0, 0, 0.15);
@@ -338,16 +336,13 @@ body.dark-theme .user-status-message {
     transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
     opacity: 0; /* Start hidden */
     transform: translateY(20px); /* Start slightly below */
-    /* Add `pointer-events: none;` to prevent interaction when hidden */
-    pointer-events: none;
+    pointer-events: none; /* Prevent interaction when hidden */
 }
 
 #chat-screen.active {
     opacity: 1;
     transform: translateY(0);
-    /* `display: flex;` is no longer needed here as it's default. */
-    /* Re-enable pointer events when active */
-    pointer-events: auto;
+    pointer-events: auto; /* Re-enable pointer events when active */
 }
 
 /* --- Chat Header --- */
@@ -357,19 +352,15 @@ body.dark-theme .user-status-message {
     border-bottom: 1px solid #eee; /* Default border */
     border-radius: 15px 15px 0 0;
     display: flex;
-    /* Changed justify-content to space-between to spread items */
     justify-content: space-between;
     align-items: center;
     color: #555; /* Default header text color */
     font-size: 1.1em;
     text-shadow: none;
-    /* Removed `position: relative;` as theme toggle will be part of flex now */
 }
 
 /* --- Theme Toggle Button --- */
 #theme-toggle-btn {
-    /* Removed absolute positioning to integrate into flexbox */
-    /* Adjusted padding for better click area if needed, or keep existing for icon-only */
     background: none;
     border: none;
     font-size: 1.5em;
@@ -377,8 +368,7 @@ body.dark-theme .user-status-message {
     color: #666; /* Default color */
     transition: color 0.3s ease;
     z-index: 100;
-    /* Added margin-right to separate from chat title if placed directly next to it */
-    margin-right: auto; /* Pushes the title to the center */
+    margin-right: auto; /* Pushes the chat title to the center-right */
     padding: 5px; /* Add some padding for touch target */
 }
 
@@ -545,7 +535,7 @@ body.dark-theme #theme-toggle-btn:hover {
     opacity: 1;
 }
 
-/* --- Reply Snippet Container (above message input) - NEWLY ADDED --- */
+/* --- Reply Snippet Container (above message input) --- */
 #reply-snippet-container {
     display: flex;
     justify-content: space-between;
