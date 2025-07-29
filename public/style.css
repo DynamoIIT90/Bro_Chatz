@@ -6,17 +6,31 @@ body {
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    background: linear-gradient(135deg, #1a2a3a, #0a1a2a); /* Dark gradient background */
-    color: #f0f0f0; /* Light text for contrast */
+    /* --- NEW THEME: Light, animating background --- */
+    background: linear-gradient(45deg, #e0f2f7, #f0f9fa, #e0f2f7, #f7fdfd); /* Light, subtle gradient */
+    background-size: 400% 400%; /* Make background larger for animation */
+    animation: background-shift 15s ease infinite alternate; /* Animates the gradient */
+    color: #333; /* Darker text for readability on light backgrounds */
     overflow: hidden; /* Hide scrollbars that might appear due to popups initially */
+}
+
+/* New Keyframes for animating the body background */
+@keyframes background-shift {
+    0% {
+        background-position: 0% 50%;
+    }
+    100% {
+        background-position: 100% 50%;
+    }
 }
 
 /* --- Welcome Screen --- */
 #welcome-screen {
-    background-color: rgba(0, 0, 0, 0.7);
+    /* --- NEW THEME: Lighter, softer shadows --- */
+    background-color: rgba(255, 255, 255, 0.95); /* Lighter background */
     padding: 40px;
     border-radius: 15px;
-    box-shadow: 0 0 30px rgba(0, 255, 255, 0.5); /* Cyan glow */
+    box-shadow: 0 0 25px rgba(0, 0, 0, 0.15); /* Softer shadow */
     text-align: center;
     max-width: 400px;
     width: 90%;
@@ -33,32 +47,35 @@ body {
 }
 
 #welcome-screen h1 {
-    color: #00ffff; /* Cyan color for heading */
+    /* --- NEW THEME: Softer blue/grey for heading --- */
+    color: #555; /* Darker grey for heading */
     margin-bottom: 25px;
     font-size: 2.2em;
-    text-shadow: 0 0 10px rgba(0, 255, 255, 0.7);
+    text-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
 }
 
 #username-input {
     width: calc(100% - 20px);
     padding: 12px;
     margin-bottom: 20px;
-    border: 2px solid #00ffff;
+    /* --- NEW THEME: Softer borders/background --- */
+    border: 2px solid #ccc;
     border-radius: 8px;
-    background-color: #0d1a2a;
-    color: #f0f0f0;
+    background-color: #fff;
+    color: #333;
     font-size: 1.1em;
     outline: none;
     transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 #username-input::placeholder {
-    color: #aaa;
+    color: #888;
 }
 
 #username-input:focus {
-    border-color: #00aaff;
-    box-shadow: 0 0 15px rgba(0, 170, 255, 0.7);
+    /* --- NEW THEME: Softer focus glow --- */
+    border-color: #88ccee;
+    box-shadow: 0 0 10px rgba(136, 204, 238, 0.5);
 }
 
 #username-input.shake {
@@ -72,8 +89,9 @@ body {
 }
 
 #start-chat-btn {
-    background-color: #00ffff;
-    color: #0d1a2a;
+    /* --- NEW THEME: Softer blue button --- */
+    background-color: #66ccff;
+    color: #fff;
     padding: 14px 30px;
     border: none;
     border-radius: 8px;
@@ -81,21 +99,22 @@ body {
     font-weight: bold;
     cursor: pointer;
     transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
-    box-shadow: 0 5px 15px rgba(0, 255, 255, 0.4);
+    box-shadow: 0 5px 15px rgba(102, 204, 255, 0.4);
 }
 
 #start-chat-btn:hover {
-    background-color: #00aaff;
+    background-color: #33aaff;
     transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(0, 170, 255, 0.6);
+    box-shadow: 0 8px 20px rgba(51, 170, 255, 0.6);
 }
 
 /* --- Chat Screen --- */
 #chat-screen {
     display: none; /* Hidden by default, activated by JS */
-    background-color: rgba(0, 0, 0, 0.7);
+    /* --- NEW THEME: Lighter, softer shadows --- */
+    background-color: rgba(255, 255, 255, 0.95);
     border-radius: 15px;
-    box-shadow: 0 0 30px rgba(0, 255, 255, 0.5);
+    box-shadow: 0 0 25px rgba(0, 0, 0, 0.15);
     width: 95%;
     max-width: 800px;
     height: 90vh;
@@ -115,16 +134,17 @@ body {
 
 /* --- Chat Header --- */
 .chat-header {
-    background-color: rgba(13, 26, 42, 0.8); /* Darker header */
+    /* --- NEW THEME: Lighter header --- */
+    background-color: #f8f8f8;
     padding: 15px 20px;
-    border-bottom: 1px solid #00ffff;
+    border-bottom: 1px solid #eee;
     border-radius: 15px 15px 0 0;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    color: #00ffff;
+    color: #555; /* Darker text */
     font-size: 1.1em;
-    text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
+    text-shadow: none;
 }
 
 .chat-header h2 {
@@ -139,7 +159,8 @@ body {
 
 .online-users i {
     margin-right: 8px;
-    color: #00ff00; /* Green for online indicator */
+    /* --- NEW THEME: Darker green for online indicator --- */
+    color: #008800;
 }
 
 /* --- Messages Container --- */
@@ -148,7 +169,8 @@ body {
     padding: 20px;
     overflow-y: auto; /* Enable scrolling for messages */
     scroll-behavior: smooth;
-    background-color: rgba(0, 0, 0, 0.5); /* Slightly transparent background */
+    /* --- NEW THEME: Lighter background --- */
+    background-color: rgba(255, 255, 255, 0.7);
     display: flex;
     flex-direction: column;
 }
@@ -158,54 +180,58 @@ body {
 }
 
 #messages::-webkit-scrollbar-track {
-    background: #0d1a2a;
+    /* --- NEW THEME: Lighter scrollbar --- */
+    background: #f0f0f0;
     border-radius: 10px;
 }
 
 #messages::-webkit-scrollbar-thumb {
-    background: #00ffff;
+    /* --- NEW THEME: Lighter scrollbar thumb --- */
+    background: #bbb;
     border-radius: 10px;
 }
 
 #messages::-webkit-scrollbar-thumb:hover {
-    background: #00aaff;
+    background: #999;
 }
 
 /* --- Message Bubble --- */
 .message-bubble {
-    background-color: rgba(255, 255, 255, 0.1);
+    /* --- NEW THEME: Lighter, softer shadows --- */
+    background-color: #fff;
     padding: 10px 15px;
     border-radius: 15px;
     margin-bottom: 10px;
     max-width: 70%;
     align-self: flex-start; /* Default alignment */
     position: relative; /* For reactions */
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     word-wrap: break-word; /* Ensure long words break */
     transition: background-color 0.2s ease, transform 0.1s ease; /* For long press visual feedback */
-    border: 1px solid transparent; /* Default border */
+    border: 1px solid #eee; /* Default border */
 }
 
 .message-bubble.admin {
-    background-color: rgba(255, 255, 0, 0.1); /* Yellowish for admin */
-    border: 1px solid rgba(255, 255, 0, 0.5);
+    /* --- NEW THEME: Softer admin message color --- */
+    background-color: #fffacd; /* Light goldenrod yellow */
+    border: 1px solid #eebb00;
     align-self: center; /* Center admin messages */
     text-align: center;
     max-width: 90%; /* Admin messages can be wider */
 }
 
-/* Highlight animation for reply snippet click */
+/* Highlight animation for reply snippet click (Updated to softer glow) */
 .message-bubble.highlight {
     animation: highlight-message 1.5s ease-in-out;
 }
 
 @keyframes highlight-message {
     0% {
-        box-shadow: 0 0 15px 5px rgba(0, 255, 255, 0.7); /* Bright cyan glow */
+        box-shadow: 0 0 15px 5px rgba(136, 204, 238, 0.7); /* Softer blue glow */
         transform: scale(1.02);
     }
     50% {
-        box-shadow: 0 0 20px 8px rgba(0, 255, 255, 0.5);
+        box-shadow: 0 0 20px 8px rgba(136, 204, 238, 0.5);
         transform: scale(1.03);
     }
     100% {
@@ -214,12 +240,13 @@ body {
     }
 }
 
-
 .message-bubble .username {
     font-weight: bold;
     margin-bottom: 5px;
     display: block;
     word-wrap: break-word;
+    /* --- NEW THEME: Adjust color for better contrast on light bubbles --- */
+    /* This will be handled by JS adjustColor function */
 }
 
 .message-bubble .message-text {
@@ -229,30 +256,32 @@ body {
 
 /* Reply Snippet Styling */
 .reply-snippet {
-    background-color: rgba(255, 255, 255, 0.08);
-    border-left: 3px solid #00ffff;
+    /* --- NEW THEME: Softer reply snippet look --- */
+    background-color: rgba(0, 0, 0, 0.03); /* Very subtle background */
+    border-left: 3px solid #99ccff; /* Lighter blue border */
     padding: 5px 10px;
     margin-bottom: 8px;
     border-radius: 5px;
     font-size: 0.85em;
-    color: #bbb;
+    color: #666; /* Darker text */
     cursor: pointer;
     transition: background-color 0.2s ease;
 }
 
 .reply-snippet:hover {
-    background-color: rgba(255, 255, 255, 0.15);
+    background-color: rgba(0, 0, 0, 0.08);
 }
 
 .reply-snippet .reply-username {
     font-weight: bold;
-    color: #00ffff; /* Cyan color for replied username */
+    color: #6699ff; /* Lighter blue for replied username */
 }
 
 /* --- Typing Indicator --- */
 #typing-indicator {
     padding: 5px 20px;
-    color: #aaa;
+    /* --- NEW THEME: Darker text for typing indicator --- */
+    color: #666;
     font-style: italic;
     min-height: 20px; /* Reserve space */
     transition: opacity 0.3s ease-in-out;
@@ -266,9 +295,10 @@ body {
 
 /* --- Message Input Area --- */
 .message-input-area {
-    background-color: rgba(13, 26, 42, 0.8);
+    /* --- NEW THEME: Lighter input area background --- */
+    background-color: #f8f8f8;
     padding: 15px 20px;
-    border-top: 1px solid #00ffff;
+    border-top: 1px solid #eee;
     border-radius: 0 0 15px 15px;
     display: flex;
     align-items: center;
@@ -277,10 +307,11 @@ body {
 #message-input {
     flex-grow: 1;
     padding: 12px;
-    border: 2px solid #00ffff;
+    /* --- NEW THEME: Softer borders/background --- */
+    border: 2px solid #ccc;
     border-radius: 25px;
-    background-color: #0d1a2a;
-    color: #f0f0f0;
+    background-color: #fff;
+    color: #333;
     font-size: 1.1em;
     outline: none;
     margin-right: 10px;
@@ -288,17 +319,19 @@ body {
 }
 
 #message-input::placeholder {
-    color: #aaa;
+    color: #888;
 }
 
 #message-input:focus {
-    border-color: #00aaff;
-    box-shadow: 0 0 15px rgba(0, 170, 255, 0.7);
+    /* --- NEW THEME: Softer focus glow --- */
+    border-color: #88ccee;
+    box-shadow: 0 0 10px rgba(136, 204, 238, 0.5);
 }
 
 #send-button {
-    background-color: #00ffff;
-    color: #0d1a2a;
+    /* --- NEW THEME: Softer blue button --- */
+    background-color: #66ccff;
+    color: #fff;
     border: none;
     border-radius: 50%;
     width: 45px;
@@ -309,31 +342,32 @@ body {
     font-size: 1.3em;
     cursor: pointer;
     transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
-    box-shadow: 0 2px 10px rgba(0, 255, 255, 0.4);
+    box-shadow: 0 2px 10px rgba(102, 204, 255, 0.4);
 }
 
 #send-button:hover {
-    background-color: #00aaff;
+    background-color: #33aaff;
     transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(0, 170, 255, 0.6);
+    box-shadow: 0 5px 15px rgba(51, 170, 255, 0.6);
 }
 
 #send-button:disabled {
-    background-color: #333;
+    background-color: #ccc;
     color: #888;
     cursor: not-allowed;
     box-shadow: none;
     transform: none;
 }
 
-/* --- Reaction Pop-up (renamed to Action Popup) --- */
+/* --- Action Pop-up (Emoji + Reply) --- */
 #action-popup {
     position: fixed;
-    background-color: rgba(0, 0, 0, 0.85);
-    border: 1px solid #00ffff;
+    /* --- NEW THEME: Lighter popup with softer shadows --- */
+    background-color: rgba(255, 255, 255, 0.98);
+    border: 1px solid #ddd;
     border-radius: 10px;
     padding: 10px;
-    box-shadow: 0 5px 20px rgba(0, 255, 255, 0.7);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
     z-index: 1000;
     display: flex;
     flex-direction: column; /* Stack options vertically */
@@ -362,16 +396,18 @@ body {
     padding: 5px;
     border-radius: 5px;
     transition: background-color 0.2s ease, transform 0.1s ease;
-    background-color: rgba(255, 255, 255, 0.05); /* Subtle background */
+    /* --- NEW THEME: Subtle background for emoji options --- */
+    background-color: rgba(0, 0, 0, 0.03);
 }
 
 .emoji-option:hover {
-    background-color: rgba(255, 255, 255, 0.2);
+    background-color: rgba(0, 0, 0, 0.1);
     transform: scale(1.1);
 }
 
 #reply-button {
-    background-color: #00aaff;
+    /* --- NEW THEME: Softer blue button --- */
+    background-color: #66ccff;
     color: white;
     padding: 8px 12px;
     border: none;
@@ -384,7 +420,7 @@ body {
 }
 
 #reply-button:hover {
-    background-color: #0088cc;
+    background-color: #33aaff;
 }
 
 /* --- Message Reaction Display --- */
@@ -397,24 +433,26 @@ body {
 }
 
 .reaction-item {
-    background-color: rgba(255, 255, 255, 0.15);
+    /* --- NEW THEME: Softer reaction item look --- */
+    background-color: rgba(0, 0, 0, 0.08);
     border-radius: 12px;
     padding: 3px 8px;
     display: flex;
     align-items: center;
     gap: 3px;
-    color: #eee;
+    color: #555; /* Darker text */
 }
 
 .reaction-item small {
     font-size: 0.9em;
-    color: #bbb;
+    color: #888; /* Softer grey for reactor name */
 }
 
 /* Visual feedback for long press */
 .message-bubble.long-press-active {
     transform: scale(1.02);
-    box-shadow: 0 0 15px rgba(0, 255, 255, 0.7);
+    /* --- NEW THEME: Softer long press glow --- */
+    box-shadow: 0 0 10px rgba(0, 150, 255, 0.5);
 }
 
 
@@ -434,40 +472,40 @@ body {
 }
 
 .user-status-message {
-    background-color: rgba(0, 255, 255, 0.8); /* Cyan background */
-    color: #0d1a2a; /* Dark text */
+    /* --- NEW THEME: Lighter, softer status message --- */
+    background-color: rgba(136, 204, 238, 0.9); /* Softer blue background */
+    color: #333; /* Dark text */
     padding: 10px 20px;
     border-radius: 25px;
     margin-bottom: 10px; /* Space between notifications */
     font-size: 1.1em;
     font-weight: bold;
-    box-shadow: 0 5px 15px rgba(0, 255, 255, 0.5);
+    box-shadow: 0 5px 15px rgba(136, 204, 238, 0.3); /* Softer shadow */
     text-align: center;
     white-space: nowrap; /* Prevent text wrapping */
     animation: status-popup-animation 12s forwards; /* 12-second animation */
-    /* Use 'forwards' to keep the element at the end state of the animation (opacity: 0) */
 }
 
-/* NEW: Keyframe animation for status popups */
+/* Keyframe animation for status popups (remains the same timing/movement) */
 @keyframes status-popup-animation {
     0% {
         opacity: 0;
-        transform: translateY(50px) scale(0.9); /* Start lower, slightly transparent, slightly smaller */
+        transform: translateY(50px) scale(0.9);
     }
     5% {
         opacity: 1;
-        transform: translateY(0) scale(1); /* Quick fade in and move to initial position */
+        transform: translateY(0) scale(1);
     }
     90% {
         opacity: 1;
-        transform: translateY(-80px) scale(1); /* Stay visible and move up */
+        transform: translateY(-80px) scale(1);
     }
     95% {
         opacity: 0.5;
-        transform: translateY(-120px) scale(1.1); /* Begin fading out and slightly scaling up */
+        transform: translateY(-120px) scale(1.1);
     }
     100% {
         opacity: 0;
-        transform: translateY(-150px) scale(1.2); /* Fully faded out, moved further up, larger ("burst" illusion) */
+        transform: translateY(-150px) scale(1.2);
     }
 }
