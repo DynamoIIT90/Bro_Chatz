@@ -3,6 +3,7 @@ const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
 const path = require('path');
+const fetch = require('node-fetch'); // Make sure you have 'node-fetch' installed: npm install node-fetch@2
 
 const app = express();
 const server = http.createServer(app);
@@ -25,9 +26,9 @@ let messageIdCounter = 0; // Unique ID counter for messages
 let typingUsers = {}; // Stores { username: lastTypingTime } for current typers
 
 // --- Configuration for AI (Gemini) ---
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyC0vAo8oWOb22IGUy2J5TrzrKFxobpMj5g'; // *** IMPORTANT: Set this via environment variable! ***
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'YOUR_GEMINI_API_KEY_HERE'; // *** IMPORTANT: Set this via environment variable! ***
 
-console.log('Server starting. GEMINI_API_KEY:', GEMINI_API_KEY ? '******' + GEMINI_API_KEY.substring(GEMINI_API_KEY.length - 4) : 'NOT SET');
+console.log('Server starting. GEMINI_API_KEY:', GEMINI_API_KEY && GEMINI_API_KEY !== 'YOUR_GEMINI_API_KEY_HERE' ? '******' + GEMINI_API_KEY.substring(GEMINI_API_KEY.length - 4) : 'NOT SET or DEFAULT');
 
 if (!GEMINI_API_KEY || GEMINI_API_KEY === 'YOUR_GEMINI_API_KEY_HERE') {
     console.error('ERROR: GEMINI_API_KEY environment variable is not set or is default!');
@@ -106,13 +107,27 @@ io.on('connection', (socket) => {
         const trimmedUsername = username.trim();
 
         if (!trimmedUsername || trimmedUsername.length < 2 || trimmedUsername.length > 20) {
-            socket.emit('admin_message', 'Username must be between 2 and 20 characters long.');
+            socket.emit('admin_message', {
+                username: 'Admin',
+                message: 'Username must be between 2 and 20 characters long.',
+                timestamp: getCurrentTimestamp(),
+                messageId: `msg-${++messageIdCounter}`,
+                type: 'admin'
+            });
+            socket.emit('username_set_error', { message: 'Username validation failed: length.' }); // Inform client about failure
             return;
         }
 
         const usernameTaken = Object.values(users).some(user => user.username.toLowerCase() === trimmedUsername.toLowerCase());
         if (usernameTaken) {
-            socket.emit('admin_message', `Username "${trimmedUsername}" is already taken. Please choose another.`);
+            socket.emit('admin_message', {
+                username: 'Admin',
+                message: `Username "${trimmedUsername}" is already taken. Please choose another.`,
+                timestamp: getCurrentTimestamp(),
+                messageId: `msg-${++messageIdCounter}`,
+                type: 'admin'
+            });
+            socket.emit('username_set_error', { message: 'Username validation failed: already taken.' }); // Inform client about failure
             return;
         }
 
@@ -134,6 +149,8 @@ io.on('connection', (socket) => {
             messageHistory.push(messageData);
             io.emit('admin_message', messageData);
             console.log(`${oldUsername} changed name to ${trimmedUsername}`);
+            // --- ADDED/UPDATED THIS LINE ---
+            socket.emit('username_set', { username: trimmedUsername, color: userColor });
         } else {
             // New user joining for the first time
             users[socket.id] = { username: trimmedUsername, color: userColor, lastTypingTime: 0 };
@@ -144,6 +161,8 @@ io.on('connection', (socket) => {
                 messageId: `msg-${++messageIdCounter}`,
                 type: 'admin'
             });
+            // --- ADDED/UPDATED THIS LINE ---
+            socket.emit('username_set', { username: trimmedUsername, color: userColor });
             socket.broadcast.emit('user_status', { username: trimmedUsername, status: 'joined' });
             console.log(`${trimmedUsername} joined.`);
         }
