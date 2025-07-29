@@ -17,23 +17,32 @@ body {
     justify-content: center;
     align-items: center;
     width: 100%;
-    height: 100vh; /* Full viewport height for centering */
+    height: 100vh; /* Full viewport height */
+    overflow: hidden;
+    position: relative; /* For proper stacking of screens */
 }
 
+/* Screen Management */
 .screen {
     width: 100%;
-    max-width: 420px; /* Max width for chat container on larger screens */
-    height: 100vh; /* Full height for mobile experience */
-    display: none; /* Hidden by default, activated by JS */
-    flex-direction: column; /* For vertical stacking of content */
+    max-width: 420px; /* Limits width on larger screens */
+    height: 100vh; /* Full height for mobile responsiveness */
+    display: none; /* Hidden by default */
+    flex-direction: column;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
     background-color: #fff;
     border-radius: 8px;
-    overflow: hidden; /* Hide scrollbars that might be outside chat-container */
+    overflow: hidden; /* Ensures content doesn't spill out */
+    transition: opacity 0.3s ease; /* Smooth transition */
+    position: absolute; /* To allow stacking on top of each other */
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
 }
 
 .screen.active {
-    display: flex; /* Show the active screen */
+    display: flex !important; /* Force display flex when active */
+    opacity: 1;
 }
 
 /* Welcome Screen Specifics */
@@ -53,6 +62,8 @@ body {
     flex-direction: column;
     align-items: center;
     gap: 20px;
+    width: 100%; /* Take full width of its parent (.screen) */
+    max-width: 360px; /* Limit card width */
 }
 
 .welcome-logo {
@@ -63,7 +74,7 @@ body {
 }
 
 #welcome-screen h1 {
-    color: #4CAF50; /* A fresh green for your brand */
+    color: #4CAF50;
     margin-bottom: 15px;
     font-size: 1.8em;
 }
@@ -125,14 +136,22 @@ body {
     font-weight: bold;
 }
 
+/* Online Users Capsule with Blinking Effect */
+@keyframes pulse {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.05); opacity: 0.8; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
 .online-users {
     font-size: 0.9em;
     background-color: rgba(255, 255, 255, 0.2);
     padding: 5px 10px;
     border-radius: 20px;
-    display: flex; /* Makes the capsule look */
+    display: flex;
     align-items: center;
     gap: 5px;
+    animation: pulse 2s infinite ease-in-out; /* Add this line for blinking */
 }
 
 /* User Status Notifications (Join/Leave) */
@@ -147,7 +166,7 @@ body {
     margin-bottom: 5px;
     padding: 5px 10px;
     border-radius: 15px;
-    display: inline-block; /* To make it a capsule */
+    display: inline-block;
     opacity: 1;
     transition: opacity 1s ease-out;
 }
@@ -162,15 +181,14 @@ body {
     color: #d32f2f;
 }
 
-
 /* Messages Container */
 .messages-container {
     flex-grow: 1;
     padding: 10px 15px;
     overflow-y: auto;
-    background-color: #f8f9fa; /* Lighter background for messages */
+    background-color: #f8f9fa;
     scroll-behavior: smooth;
-    -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+    -webkit-overflow-scrolling: touch;
 }
 
 /* Individual Message Bubbles */
@@ -178,34 +196,34 @@ body {
     display: flex;
     flex-direction: column;
     margin-bottom: 10px;
-    max-width: 80%; /* Limit message width */
+    max-width: 80%;
     position: relative;
     border-radius: 12px;
     padding: 8px 12px;
     font-size: 0.95em;
     line-height: 1.4;
-    word-wrap: break-word; /* Ensure long words break */
+    word-wrap: break-word;
     transition: background-color 0.2s ease;
 }
 
 .message-bubble.me {
-    align-self: flex-end; /* Align my messages to the right */
-    background-color: #dcf8c6; /* Light green for my messages */
+    align-self: flex-end;
+    background-color: #dcf8c6;
     color: #333;
-    border-bottom-right-radius: 2px; /* For a 'tail' effect */
+    border-bottom-right-radius: 2px;
 }
 
 .message-bubble.other {
-    align-self: flex-start; /* Align other messages to the left */
-    background-color: #ffffff; /* White for others' messages */
+    align-self: flex-start;
+    background-color: #ffffff;
     color: #333;
     border: 1px solid #e0e0e0;
-    border-bottom-left-radius: 2px; /* For a 'tail' effect */
+    border-bottom-left-radius: 2px;
 }
 
 .message-bubble.admin {
-    align-self: center; /* Center admin messages */
-    background-color: #e0f2f7; /* Light blue for admin messages */
+    align-self: center;
+    background-color: #e0f2f7;
     color: #0288d1;
     font-size: 0.85em;
     text-align: center;
@@ -215,7 +233,7 @@ body {
 }
 
 .message-bubble.highlight {
-    background-color: #ffeb3b !important; /* Yellow for highlight */
+    background-color: #ffeb3b !important;
     box-shadow: 0 0 10px rgba(255, 235, 59, 0.7);
     animation: highlightFade 1.5s forwards;
 }
@@ -225,27 +243,22 @@ body {
     100% { background-color: initial; box-shadow: none; }
 }
 
+/* Username color - Ensure inline 'style' attribute overrides by being less specific here */
 .message-bubble .username {
     font-weight: bold;
     margin-bottom: 4px;
     font-size: 0.85em;
-    color: #4CAF50; /* Default user color */
+    /* No 'color' property here. This allows inline style (e.g., style="color: rgb(123,45,67);") to be the main source of color for dynamic usernames. */
 }
 
+/* Specific colors for 'me' and 'admin' can still exist if desired */
 .message-bubble.me .username {
-    color: #2e7d32; /* Darker green for my username */
+    color: #2e7d32;
+}
+.message-bubble.admin .username {
+    color: #0288d1;
 }
 
-.message-bubble .message-text {
-    word-break: break-word; /* Break long words */
-}
-
-.message-bubble .timestamp {
-    font-size: 0.7em;
-    color: #999;
-    align-self: flex-end;
-    margin-top: 5px;
-}
 
 /* Reply Snippet within messages */
 .reply-snippet {
@@ -274,9 +287,9 @@ body {
 
 .reply-snippet .reply-text {
     color: #555;
-    white-space: nowrap; /* Keep text on single line */
-    overflow: hidden; /* Hide overflow */
-    text-overflow: ellipsis; /* Add ellipsis */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
     display: block;
 }
 
@@ -286,12 +299,12 @@ body {
     flex-wrap: wrap;
     gap: 5px;
     margin-top: 5px;
-    justify-content: flex-end; /* Align reactions to the right */
+    justify-content: flex-end;
     font-size: 0.8em;
 }
 
 .message-bubble.other .message-reactions {
-    justify-content: flex-start; /* Align reactions to the left for others */
+    justify-content: flex-start;
 }
 
 .reaction-item {
@@ -308,7 +321,6 @@ body {
     font-size: 0.7em;
     color: #777;
 }
-
 
 /* Typing Indicator */
 #typing-indicator {
@@ -393,7 +405,7 @@ body {
     font-size: 1em;
     cursor: pointer;
     transition: background-color 0.3s ease, transform 0.1s ease;
-    min-width: 80px; /* Ensure consistent width for buttons */
+    min-width: 80px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
@@ -433,16 +445,15 @@ body {
     display: none; /* Hidden by default */
     flex-direction: column;
     min-width: 150px;
-    transition: opacity 0.2s ease, transform 0.2s ease;
-    opacity: 0;
-    transform: scale(0.9);
-    transform-origin: top left; /* Adjust origin based on where it appears */
+    opacity: 0; /* Control visibility with opacity and pointer-events */
+    pointer-events: none;
+    transition: opacity 0.2s ease;
 }
 
 .action-popup.active {
     display: flex;
     opacity: 1;
-    transform: scale(1);
+    pointer-events: auto;
 }
 
 .action-item {
@@ -503,7 +514,7 @@ body.dark-theme .chat-container {
 }
 
 body.dark-theme #welcome-screen h1 {
-    color: #68d391; /* Lighter green for dark theme */
+    color: #68d391;
 }
 
 body.dark-theme #username-input {
@@ -518,7 +529,7 @@ body.dark-theme #username-input:focus {
 }
 
 body.dark-theme .chat-header {
-    background-color: #48bb78; /* Darker green for header */
+    background-color: #48bb78;
 }
 
 body.dark-theme .online-users {
@@ -543,10 +554,6 @@ body.dark-theme .message-bubble.me {
 body.dark-theme .message-bubble.admin {
     background-color: #3182ce;
     color: #e0f2f7;
-}
-
-body.dark-theme .message-bubble .username {
-    color: #68d391;
 }
 
 body.dark-theme .message-bubble.me .username {
@@ -654,12 +661,13 @@ body.dark-theme .user-status-message.leave {
     .screen {
         border-radius: 0;
         box-shadow: none;
-        width: 100%;
-        height: 100vh;
+        max-width: 100%;
+        left: 0;
+        transform: none;
     }
-
-    body {
-        justify-content: flex-start; /* Align app to top on mobile */
-        align-items: flex-start;
+    .welcome-card {
+        padding: 20px;
+        border-radius: 0;
+        box-shadow: none;
     }
 }

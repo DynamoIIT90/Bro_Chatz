@@ -19,7 +19,7 @@ let replyButton;
 let replySnippetContainer;
 let replySnippetText;
 let cancelReplyBtn;
-let userStatusNotifications; // For user join/leave messages
+let userStatusNotifications;
 
 // --- Socket.IO Client Setup ---
 const socket = io();
@@ -44,14 +44,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     domContentLoadedFired = true; // Set the flag to true after the first execution
 
-    console.log('DOM fully loaded.'); // ADDED LOG
+    console.log('DOM fully loaded. Initializing...');
 
     // Select all DOM elements once the document's structure is fully loaded
     welcomeScreen = document.getElementById('welcome-screen');
     chatScreen = document.getElementById('chat-screen');
     usernameInput = document.getElementById('username-input');
     startChatBtn = document.getElementById('start-chat-btn');
-    chatHeader = document.querySelector('.chat-header');
+    chatHeader = document.querySelector('.chat-header'); // This may not be directly used for header but generally exists
     themeToggleBtn = document.getElementById('theme-toggle-btn');
     onlineUsersCount = document.getElementById('online-users-count');
     messagesContainer = document.getElementById('messages');
@@ -66,14 +66,18 @@ document.addEventListener('DOMContentLoaded', () => {
     cancelReplyBtn = document.getElementById('cancel-reply-btn');
     userStatusNotifications = document.getElementById('user-status-notifications');
 
-    console.log('Elements selected. Welcome screen:', welcomeScreen, 'Start Chat Button:', startChatBtn); // ADDED LOG
+    console.log('Elements selected.');
 
     // --- Initial UI Setup ---
+    // Ensure welcome screen is active and chat screen is not
     if (welcomeScreen) {
-        welcomeScreen.classList.add('active'); // Ensure welcome screen is visible initially
+        welcomeScreen.classList.add('active');
+    }
+    if (chatScreen) {
+        chatScreen.classList.remove('active');
     }
     if (usernameInput) {
-        usernameInput.focus(); // Automatically focus the username input for convenience
+        usernameInput.focus();
     }
 
     // Load user's theme preference from browser's local storage
@@ -84,18 +88,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // Handle "Start Chat" button click
     if (startChatBtn) {
         startChatBtn.addEventListener('click', () => {
-            console.log('Start Chat button clicked!'); // ADDED LOG
             const enteredUsername = usernameInput ? usernameInput.value.trim() : '';
             if (enteredUsername) {
                 currentUsername = enteredUsername;
-                console.log('Attempting to set username:', currentUsername); // ADDED LOG
                 socket.emit('set_username', currentUsername); // Send the chosen username to the server
             } else {
-                // Provide visual feedback if username is empty
                 if (usernameInput) {
                     usernameInput.placeholder = 'Please enter a name!';
-                    usernameInput.classList.add('shake'); // Add a shake animation
-                    setTimeout(() => usernameInput.classList.remove('shake'), 500); // Remove shake after animation
+                    usernameInput.classList.add('shake');
+                    setTimeout(() => usernameInput.classList.remove('shake'), 500);
                 }
             }
         });
@@ -105,8 +106,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (usernameInput) {
         usernameInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
+                e.preventDefault(); // Prevent newline in input
                 if (startChatBtn) {
-                    startChatBtn.click(); // Simulate a click on the "Start Chat" button
+                    startChatBtn.click();
                 }
             }
         });
@@ -126,7 +128,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (messageInput) {
         messageInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) { // Shift+Enter will allow a new line
-                e.preventDefault(); // Prevent default Enter key behavior (like new line)
+                e.preventDefault();
                 sendMessage();
             }
         });
@@ -134,14 +136,14 @@ document.addEventListener('DOMContentLoaded', () => {
         // --- Typing Indicator Logic ---
         messageInput.addEventListener('input', () => {
             if (messageInput.value.trim() !== '') {
-                socket.emit('typing'); // Notify server that user is typing
-                clearTimeout(typingTimer); // Reset the timer
+                socket.emit('typing');
+                clearTimeout(typingTimer);
                 typingTimer = setTimeout(() => {
-                    socket.emit('stop_typing'); // Notify server when typing stops
+                    socket.emit('stop_typing');
                 }, TYPING_DELAY);
             } else {
                 clearTimeout(typingTimer);
-                socket.emit('stop_typing'); // Ensure stop_typing is sent if input is cleared
+                socket.emit('stop_typing');
             }
         });
     }
@@ -188,6 +190,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Global Click Listener to Hide Action Popup ---
     document.addEventListener('click', (event) => {
         if (actionPopup && actionPopup.classList.contains('active')) {
+            // Check if click is outside popup AND not on the message bubble that triggered it
             if (!actionPopup.contains(event.target) && (!lastTouchTargetMessage || !lastTouchTargetMessage.contains(event.target))) {
                 hideActionPopup();
             }
@@ -202,6 +205,20 @@ document.addEventListener('DOMContentLoaded', () => {
         messagesContainer.addEventListener('touchstart', handlePointerDown);
         messagesContainer.addEventListener('touchend', handlePointerUp);
         messagesContainer.addEventListener('touchmove', handlePointerMove);
+
+        // Prevent context menu on right-click for messages container to allow custom popup
+        messagesContainer.addEventListener('contextmenu', (e) => {
+            const targetBubble = e.target.closest('.message-bubble');
+            if (targetBubble && !targetBubble.classList.contains('admin')) {
+                e.preventDefault();
+                lastTouchTargetMessage = targetBubble;
+                if (lastTouchTargetMessage) {
+                    lastTouchTargetMessage.classList.add('long-press-active');
+                }
+                // Show popup at mouse position for right-click
+                showActionPopup(e.clientX, e.clientY);
+            }
+        });
     }
 });
 
@@ -272,7 +289,7 @@ async function sendMessage() {
     if (messageInput) {
         messageInput.value = '';
     }
-    socket.emit('stop_typing'); // Ensure typing indicator is turned off
+    socket.emit('stop_typing');
 }
 
 // --- Message Display Function ---
@@ -282,10 +299,9 @@ function displayMessage(username, message, timestamp, type = 'user', messageId =
     const messageBubble = document.createElement('div');
     messageBubble.classList.add('message-bubble');
 
-    // Add 'me' or 'other' class based on the sender
     if (username === currentUsername && type === 'user') {
         messageBubble.classList.add('me');
-    } else if (type === 'user') { // For other users' messages
+    } else if (type === 'user') {
         messageBubble.classList.add('other');
     }
 
@@ -311,9 +327,12 @@ function displayMessage(username, message, timestamp, type = 'user', messageId =
         <span class="reaction-item">${emoji} <small>${count}</small></span>
     `).join('');
 
+    // Dynamically apply color style to username span if a color is provided
+    const usernameSpanStyle = color ? `style="color: ${color};"` : '';
+
     messageBubble.innerHTML = `
         ${replySnippetHtml}
-        <span class="username" ${color ? `style="color: ${color};"` : ''}>${username}</span>
+        <span class="username" ${usernameSpanStyle}>${username}</span>
         <span class="message-text">${message}</span>
         <span class="timestamp">${timestamp}</span>
         <div class="message-reactions">${reactionsHtml}</div>
@@ -370,8 +389,28 @@ function cancelReply() {
 function showActionPopup(x, y) {
     if (!actionPopup) return;
 
+    // Position the popup
     actionPopup.style.left = `${x}px`;
     actionPopup.style.top = `${y}px`;
+
+    // Ensure it's within viewport bounds
+    // Temporarily make active to get dimensions
+    actionPopup.classList.add('active');
+    const popupRect = actionPopup.getBoundingClientRect();
+
+    // Adjust if it goes off screen right
+    if (popupRect.right > window.innerWidth - 10) {
+        actionPopup.style.left = `${window.innerWidth - popupRect.width - 10}px`;
+    }
+    // Adjust if it goes off screen bottom
+    if (popupRect.bottom > window.innerHeight - 10) {
+        actionPopup.style.top = `${window.innerHeight - popupRect.height - 10}px`;
+    }
+    // Adjust if it goes off screen top (less likely for context menu)
+    if (popupRect.top < 10) {
+        actionPopup.style.top = '10px';
+    }
+
     actionPopup.classList.add('active');
 }
 
@@ -389,56 +428,37 @@ function hideActionPopup() {
 function handlePointerDown(e) {
     const targetBubble = e.target.closest('.message-bubble');
     if (!targetBubble || targetBubble.classList.contains('admin')) {
-        return; // Don't allow long press on admin messages
+        return; // Don't allow long press/right click on admin messages
     }
 
-    if (e.button === 2) { // Right-click (mouse event)
-        e.preventDefault();
-    }
-    if (e.cancelable && e.touches) { // Check for touch events and if default can be prevented
-        e.preventDefault();
-    }
-
-    lastTouchTargetMessage = targetBubble;
-    if (lastTouchTargetMessage) {
-        lastTouchTargetMessage.classList.add('long-press-active');
-    }
-
-    if (lastTouchTargetMessage) {
-        lastTouchTargetMessage.dataset.initialX = e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
-        lastTouchTargetMessage.dataset.initialY = e.clientY || (e.touches && e.touches[0] ? e.touches[0].clientY : 0);
-    }
-
-    lastTouchStartTime = Date.now();
-    longPressTimer = setTimeout(() => {
-        if (lastTouchTargetMessage && actionPopup) {
-            const rect = lastTouchTargetMessage.getBoundingClientRect();
-            let popupX, popupY;
-
-            // Temporarily make popup visible (but off-screen) to get its true dimensions
-            actionPopup.style.visibility = 'hidden';
-            actionPopup.classList.add('active');
-            const popupHeight = actionPopup.offsetHeight;
-            const popupWidth = actionPopup.offsetWidth;
-            actionPopup.classList.remove('active');
-            actionPopup.style.visibility = '';
-
-            // Calculate popup Y position: try above, if not enough space, place below
-            if (rect.top - popupHeight - 10 > 0) {
-                popupY = rect.top - popupHeight - 10;
-            } else {
-                popupY = rect.bottom + 10;
-            }
-
-            // Calculate popup X position: centered above/below the message bubble
-            popupX = rect.left + rect.width / 2 - popupWidth / 2;
-
-            // Clamp X position to stay within window bounds
-            popupX = Math.max(10, Math.min(popupX, window.innerWidth - popupWidth - 10));
-
-            showActionPopup(popupX, popupY);
+    // Only proceed if it's a left click or a touch
+    if (e.button === 0 || e.touches) {
+        // Prevent default context menu on touch devices
+        if (e.touches && e.cancelable) {
+            e.preventDefault();
         }
-    }, LONG_PRESS_THRESHOLD);
+
+        lastTouchTargetMessage = targetBubble;
+        if (lastTouchTargetMessage) {
+            lastTouchTargetMessage.classList.add('long-press-active');
+            lastTouchTargetMessage.dataset.initialX = e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
+            lastTouchTargetMessage.dataset.initialY = e.clientY || (e.touches && e.touches[0] ? e.touches[0].clientY : 0);
+        }
+
+        lastTouchStartTime = Date.now();
+        longPressTimer = setTimeout(() => {
+            if (lastTouchTargetMessage && actionPopup) {
+                const rect = lastTouchTargetMessage.getBoundingClientRect();
+                let popupX, popupY;
+
+                // Try to show popup above the message first
+                popupX = rect.left + rect.width / 2; // Center horizontally with message
+                popupY = rect.top; // Start at top of message
+
+                showActionPopup(popupX, popupY);
+            }
+        }, LONG_PRESS_THRESHOLD);
+    }
 }
 
 function handlePointerUp(e) {
@@ -447,9 +467,9 @@ function handlePointerUp(e) {
 
     if (lastTouchTargetMessage) {
         if (Date.now() - lastTouchStartTime < LONG_PRESS_THRESHOLD) {
-            // This was a short tap, not a long press
+            // This was a short tap, remove highlight immediately
             lastTouchTargetMessage.classList.remove('long-press-active');
-            // If the popup was already active from a previous long press, hide it
+            // If the popup was already active (e.g., from a previous long press), hide it
             if (actionPopup && actionPopup.classList.contains('active')) {
                 hideActionPopup();
             }
@@ -474,7 +494,7 @@ function handlePointerMove(e) {
 
         const distance = Math.sqrt(Math.pow(currentX - initialX, 2) + Math.pow(currentY - initialY, 2));
 
-        if (distance > 10) { // A threshold of 10 pixels movement
+        if (distance > 10) { // A threshold of 10 pixels movement to cancel long press
             clearTimeout(longPressTimer);
             longPressTimer = null;
             if (lastTouchTargetMessage) {
@@ -492,7 +512,7 @@ function displayUserStatus(message, type = 'join') {
     statusDiv.classList.add('user-status-message');
     statusDiv.textContent = message;
 
-    if (type === 'joined') { // Use 'joined' and 'left' to match server events
+    if (type === 'joined') {
         statusDiv.classList.add('join');
     } else if (type === 'left') {
         statusDiv.classList.add('leave');
@@ -500,9 +520,10 @@ function displayUserStatus(message, type = 'join') {
 
     userStatusNotifications.appendChild(statusDiv);
 
+    // Remove status message after a delay
     setTimeout(() => {
         statusDiv.remove();
-    }, 12000);
+    }, 12000); // Remove after 12 seconds
 }
 
 
@@ -510,7 +531,6 @@ function displayUserStatus(message, type = 'join') {
 
 socket.on('connect', () => {
     console.log('Connected to chat server!');
-    // No action needed here, username is set on start chat button click
 });
 
 socket.on('disconnect', () => {
@@ -520,15 +540,16 @@ socket.on('disconnect', () => {
 
 // IMPORTANT: Handle the 'username_set' event from the server
 socket.on('username_set', (data) => {
-    console.log('Server confirmed username set:', data.username); // ADDED LOG
+    console.log('Server confirmed username set:', data.username);
     currentUsername = data.username;
     myAssignedColor = data.color; // Store the color for 'me' messages
 
+    // --- Screen Switching Logic ---
     if (welcomeScreen && chatScreen && messageInput) {
         welcomeScreen.classList.remove('active'); // Hide welcome screen
         chatScreen.classList.add('active'); // Show chat screen
         messageInput.focus(); // Focus the message input
-        console.log('Switched to chat screen. Message input focused.'); // ADDED LOG
+        console.log('Switched to chat screen. Message input focused.');
     } else {
         console.error('Could not find welcomeScreen, chatScreen, or messageInput to switch views.');
     }
@@ -540,11 +561,12 @@ socket.on('username_set_error', (errorData) => {
     if (usernameInput) {
         usernameInput.classList.add('shake');
         usernameInput.placeholder = errorData.message;
-        setTimeout(() => usernameInput.classList.remove('shake'), 1000);
+        setTimeout(() => {
+            usernameInput.classList.remove('shake');
+            usernameInput.placeholder = 'Enter your username'; // Reset placeholder after shake
+        }, 1000);
     }
-    // You might also want to display a more prominent error message to the user
-    // e.g., using an alert or a dedicated error div on the welcome screen.
-    displayAdminMessage(`Error: ${errorData.message}`);
+    appendAdminMessage(`Error: ${errorData.message}`);
 });
 
 
@@ -562,6 +584,7 @@ socket.on('message_history', (history) => {
         history.forEach(msg => {
             displayMessage(msg.username, msg.message, msg.timestamp, msg.type, msg.messageId, msg.replyTo, msg.reactions, msg.color);
         });
+        messagesContainer.scrollTop = messagesContainer.scrollHeight; // Scroll to bottom after loading history
     }
 });
 
@@ -572,18 +595,15 @@ socket.on('chat_message', (data) => {
 });
 
 // Receive an admin message (e.g., welcome, error messages)
-// Note: Admin messages from server now include full message data structure
 socket.on('admin_message', (data) => {
-    const { username, message, timestamp, messageId, type } = data; // destructure fully
+    const { username, message, timestamp, messageId, type } = data;
     displayMessage(username, message, timestamp, type, messageId);
-    // No color needed as it's typically set by CSS for admin messages
 });
 
 
 // Handle 'typing_users_update' event from server
 socket.on('typing_users_update', (typersArray) => {
     if (typingIndicator) {
-        // Filter out the current user if they are in the typers list
         const otherTypers = typersArray.filter(user => user !== currentUsername);
 
         if (otherTypers.length > 0) {
@@ -591,7 +611,7 @@ socket.on('typing_users_update', (typersArray) => {
             typingIndicator.classList.add('active');
         } else {
             typingIndicator.classList.remove('active');
-            typingIndicator.textContent = ''; // Clear text when no one is typing
+            typingIndicator.textContent = '';
         }
     }
 });
@@ -602,7 +622,6 @@ socket.on('user_status', (data) => {
     if (username !== currentUsername) {
         displayUserStatus(`${username} has ${status === 'joined' ? 'joined' : 'left'}.`, status);
     }
-    // No need to update user count here, server already sends 'user_count' separately
 });
 
 // Handle message reaction updates
