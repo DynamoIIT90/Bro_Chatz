@@ -1,649 +1,759 @@
-// --- Global Flag for DOMContentLoaded (CRITICAL for preventing duplicate listeners) ---
-let domContentLoadedFired = false;
-
-// --- DOM Elements (Declared here, selected once DOM is fully loaded) ---
-let welcomeScreen;
-let chatScreen;
-let usernameInput;
-let startChatBtn;
-let onlineUsersCount;
-let messagesContainer;
-let messageInput;
-let sendButton;
-let typingIndicator;
-let actionPopup;
-let emojiOptionsContainer;
-let replyButton;
-let replySnippetContainer;
-let replySnippetText;
-let cancelReplyBtn;
-let userStatusNotifications;
-
-// --- Socket.IO Client Setup ---
+// Socket.IO Connection
 const socket = io();
 
-// --- Global Variables ---
-let currentUsername = '';
-let typingTimer; // Used to manage the "typing..." indicator timeout
-const TYPING_DELAY = 5000; // 5 seconds before 'stop_typing' is emitted (as per request)
-let longPressTimer; // Timer for detecting long presses on messages
-const LONG_PRESS_THRESHOLD = 500; // 500 milliseconds for a long press
-let lastTouchStartTime; // To help distinguish between a quick tap and a long press
-let lastTouchTargetMessage = null; // Stores the message bubble element currently being long-pressed
-let currentReplyMessageId = null; // Stores the ID of the message being replied to
+// DOM Elements
+const welcomeScreen = document.getElementById('welcomeScreen');
+const chatScreen = document.getElementById('chatScreen');
+const usernameInput = document.getElementById('usernameInput');
+const startChatBtn = document.getElementById('startChatBtn');
+const chatMessages = document.getElementById('chatMessages');
+const messageInput = document.getElementById('messageInput');
+const sendBtn = document.getElementById('sendBtn');
+const onlineCount = document.getElementById('onlineCount');
+const typingIndicators = document.getElementById('typingIndicators');
+const reactionPicker = document.getElementById('reactionPicker');
+const replyPreview = document.getElementById('replyPreview');
+const notificationContainer = document.getElementById('notificationContainer');
+const aiModal = document.getElementById('aiModal');
+const aiMessages = document.getElementById('aiMessages');
+const aiCloseBtn = document.getElementById('aiCloseBtn');
+const loadingScreen = document.getElementById('loadingScreen');
 
-// --- Event Listeners and Initial Setup (Ensures DOM is ready) ---
-document.addEventListener('DOMContentLoaded', () => {
-    // Prevent re-initialization if DOMContentLoaded fires multiple times
-    if (domContentLoadedFired) {
-        console.warn('DOMContentLoaded fired more than once, skipping re-initialization.');
-        return;
+// Global Variables
+let currentUser = null;
+let userColor = '#ffffff';
+let typingTimer = null;
+let isTyping = false;
+let selectedMessage = null;
+let replyingTo = null;
+
+// Initialize App
+document.addEventListener('DOMContentLoaded', function() {
+    createParticleField();
+    initializeEventListeners();
+    
+    // Auto-resize textarea
+    messageInput.addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+    });
+});
+
+// Create Particle Field Effect
+function createParticleField() {
+    const particleField = document.querySelector('.particle-field');
+    for (let i = 0; i < 50; i++) {
+        const particle = document.createElement('div');
+        particle.style.position = 'absolute';
+        particle.style.width = Math.random() * 3 + 1 + 'px';
+        particle.style.height = particle.style.width;
+        particle.style.background = `hsl(${Math.random() * 360}, 70%, 60%)`;
+        particle.style.borderRadius = '50%';
+        particle.style.left = Math.random() * 100 + '%';
+        particle.style.top = Math.random() * 100 + '%';
+        particle.style.opacity = Math.random() * 0.5 + 0.2;
+        particle.style.animation = `floatParticle ${Math.random() * 20 + 10}s linear infinite`;
+        particle.style.animationDelay = Math.random() * 20 + 's';
+        particleField.appendChild(particle);
     }
-    domContentLoadedFired = true; // Set the flag to true after the first execution
+}
 
-    console.log('DOM fully loaded. Initializing...');
-
-    // Select all DOM elements once the document's structure is fully loaded
-    welcomeScreen = document.getElementById('welcome-screen');
-    chatScreen = document.getElementById('chat-screen');
-    usernameInput = document.getElementById('username-input');
-    startChatBtn = document.getElementById('start-chat-btn');
-    onlineUsersCount = document.getElementById('online-users-count');
-    messagesContainer = document.getElementById('messages');
-    messageInput = document.getElementById('message-input');
-    sendButton = document.getElementById('send-button');
-    typingIndicator = document.getElementById('typing-indicator');
-    actionPopup = document.getElementById('action-popup');
-    emojiOptionsContainer = document.querySelector('.emoji-options');
-    replyButton = document.getElementById('reply-button');
-    replySnippetContainer = document.getElementById('reply-snippet-container');
-    replySnippetText = document.getElementById('reply-snippet-text');
-    cancelReplyBtn = document.getElementById('cancel-reply-btn');
-    userStatusNotifications = document.getElementById('user-status-notifications');
-
-    console.log('Elements selected.');
-
-    // --- Initial UI Setup ---
-    // Ensure welcome screen is active and chat screen is not
-    if (welcomeScreen) {
-        welcomeScreen.classList.add('active');
+// Add particle float animation dynamically
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes floatParticle {
+        0% { transform: translate(0, 0) rotate(0deg); }
+        25% { transform: translate(${Math.random() * 100 - 50}px, ${Math.random() * 100 - 50}px) rotate(90deg); }
+        50% { transform: translate(${Math.random() * 100 - 50}px, ${Math.random() * 100 - 50}px) rotate(180deg); }
+        75% { transform: translate(${Math.random() * 100 - 50}px, ${Math.random() * 100 - 50}px) rotate(270deg); }
+        100% { transform: translate(0, 0) rotate(360deg); }
     }
-    if (chatScreen) {
-        chatScreen.classList.remove('active');
-    }
-    if (usernameInput) {
-        usernameInput.focus();
-    }
+`;
+document.head.appendChild(style);
 
-    // --- Core Event Listeners ---
-
-    // Handle "Start Chat" button click
-    if (startChatBtn) {
-        startChatBtn.addEventListener('click', () => {
-            const enteredUsername = usernameInput ? usernameInput.value.trim() : '';
-            if (enteredUsername) {
-                currentUsername = enteredUsername;
-                socket.emit('set_username', currentUsername); // Send the chosen username to the server
-            } else {
-                if (usernameInput) {
-                    usernameInput.placeholder = 'Please enter a name!';
-                    usernameInput.classList.add('shake');
-                    setTimeout(() => usernameInput.classList.remove('shake'), 500);
-                }
-            }
-        });
-    }
-
-    // Allow starting chat by pressing Enter in the username input field
-    if (usernameInput) {
-        usernameInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault(); // Prevent newline in input
-                if (startChatBtn) {
-                    startChatBtn.click();
-                }
-            }
-        });
-    }
-
-    // Send message when the send button is clicked
-    if (sendButton) {
-        sendButton.addEventListener('click', sendMessage);
-    }
-
-    // Send message when Enter key is pressed in the message input (unless Shift is held)
-    if (messageInput) {
-        messageInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) { // Shift+Enter will allow a new line
-                e.preventDefault();
-                sendMessage();
-            }
-        });
-
-        // --- Typing Indicator Logic ---
-        messageInput.addEventListener('input', () => {
-            if (messageInput.value.trim() !== '') {
-                socket.emit('typing');
-                clearTimeout(typingTimer);
-                typingTimer = setTimeout(() => {
-                    socket.emit('stop_typing');
-                }, TYPING_DELAY);
-            } else {
-                clearTimeout(typingTimer);
-                socket.emit('stop_typing');
-            }
-        });
-    }
-
-    // --- Reply Feature Event Listeners ---
-    if (cancelReplyBtn) {
-        cancelReplyBtn.addEventListener('click', cancelReply);
-    }
-
-    if (replyButton) {
-        replyButton.addEventListener('click', () => {
-            if (lastTouchTargetMessage) {
-                const messageId = lastTouchTargetMessage.dataset.messageId;
-                const usernameEl = lastTouchTargetMessage.querySelector('.username');
-                const messageTextEl = lastTouchTargetMessage.querySelector('.message-text');
-
-                const username = usernameEl ? usernameEl.textContent : 'Unknown';
-                const text = messageTextEl ? messageTextEl.textContent : 'No content';
-
-                activateReplyMode(messageId, username, text);
-                hideActionPopup();
-            }
-        });
-    }
-
-    // --- Emoji Reaction Feature ---
-    const emojis = ['👍', '❤️', '😂', '😮', '😢', '😡', '🙏'];
-    if (emojiOptionsContainer) {
-        emojis.forEach(emoji => {
-            const span = document.createElement('span');
-            span.classList.add('emoji-option');
-            span.textContent = emoji;
-            span.addEventListener('click', () => {
-                if (lastTouchTargetMessage) {
-                    const messageId = lastTouchTargetMessage.dataset.messageId;
-                    socket.emit('react_to_message', messageId, emoji);
-                    hideActionPopup();
-                }
-            });
-            emojiOptionsContainer.appendChild(span);
-        });
-    }
-
-    // --- Global Click Listener to Hide Action Popup ---
-    document.addEventListener('click', (event) => {
-        if (actionPopup && actionPopup.classList.contains('active')) {
-            // Check if click is outside popup AND not on the message bubble that triggered it
-            if (!actionPopup.contains(event.target) && (!lastTouchTargetMessage || !lastTouchTargetMessage.contains(event.target))) {
-                hideActionPopup();
-            }
+// Initialize Event Listeners
+function initializeEventListeners() {
+    // Welcome Screen Events
+    usernameInput.addEventListener('input', function() {
+        const value = this.value.trim();
+        startChatBtn.disabled = value.length < 2;
+        
+        if (value.length >= 2) {
+            startChatBtn.classList.add('ready');
+        } else {
+            startChatBtn.classList.remove('ready');
         }
     });
 
-    // --- Long Press / Right Click Event Handling (Delegated to messagesContainer) ---
-    if (messagesContainer) {
-        messagesContainer.addEventListener('mousedown', handlePointerDown);
-        messagesContainer.addEventListener('mouseup', handlePointerUp);
-        messagesContainer.addEventListener('mousemove', handlePointerMove);
-        messagesContainer.addEventListener('touchstart', handlePointerDown);
-        messagesContainer.addEventListener('touchend', handlePointerUp);
-        messagesContainer.addEventListener('touchmove', handlePointerMove);
+    usernameInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter' && !startChatBtn.disabled) {
+            startChat();
+        }
+    });
 
-        // Prevent context menu on right-click for messages container to allow custom popup
-        messagesContainer.addEventListener('contextmenu', (e) => {
-            const targetBubble = e.target.closest('.message-bubble');
-            if (targetBubble && !targetBubble.classList.contains('admin')) {
-                e.preventDefault();
-                lastTouchTargetMessage = targetBubble;
-                if (lastTouchTargetMessage) {
-                    lastTouchTargetMessage.classList.add('long-press-active');
-                }
-                // Show popup at mouse position for right-click
-                showActionPopup(e.clientX, e.clientY);
+    startChatBtn.addEventListener('click', startChat);
+
+    // Chat Screen Events
+    messageInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
+    });
+
+    messageInput.addEventListener('input', function() {
+        if (!isTyping && this.value.trim()) {
+            isTyping = true;
+            socket.emit('typing-start');
+        }
+        
+        clearTimeout(typingTimer);
+        typingTimer = setTimeout(() => {
+            if (isTyping) {
+                isTyping = false;
+                socket.emit('typing-stop');
+            }
+        }, 4000);
+    });
+
+    sendBtn.addEventListener('click', sendMessage);
+
+    // AI Modal Events
+    aiCloseBtn.addEventListener('click', closeAIModal);
+
+    // Click outside to close modals
+    document.addEventListener('click', function(e) {
+        if (!reactionPicker.contains(e.target) && !e.target.closest('.message-bubble')) {
+            hideReactionPicker();
+        }
+        
+        if (e.target === aiModal) {
+            closeAIModal();
+        }
+    });
+
+    // Long press for mobile
+    let longPressTimer;
+    chatMessages.addEventListener('touchstart', function(e) {
+        const messageBubble = e.target.closest('.message-bubble');
+        if (messageBubble) {
+            longPressTimer = setTimeout(() => {
+                showReactionPicker(e, messageBubble);
+            }, 500);
+        }
+    });
+
+    chatMessages.addEventListener('touchend', function() {
+        clearTimeout(longPressTimer);
+    });
+
+    // Context menu for desktop
+    chatMessages.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+        const messageBubble = e.target.closest('.message-bubble');
+        if (messageBubble) {
+            showReactionPicker(e, messageBubble);
+        }
+    });
+
+    // Reaction picker events
+    document.querySelectorAll('.reaction-emoji').forEach(emoji => {
+        emoji.addEventListener('click', function() {
+            if (selectedMessage) {
+                const emojiValue = this.dataset.emoji;
+                addReactionAnimation(this);
+                socket.emit('message-reaction', {
+                    messageId: selectedMessage.dataset.messageId,
+                    emoji: emojiValue
+                });
+                hideReactionPicker();
             }
         });
+    });
+
+    document.getElementById('replyBtn').addEventListener('click', function() {
+        if (selectedMessage) {
+            startReply(selectedMessage);
+            hideReactionPicker();
+        }
+    });
+}
+
+// Start Chat Function
+function startChat() {
+    const username = usernameInput.value.trim();
+    if (username.length < 2) return;
+
+    currentUser = username;
+    
+    // Show loading screen
+    showLoadingScreen();
+    
+    // Add button click animation
+    startChatBtn.classList.add('clicked');
+    
+    setTimeout(() => {
+        // Connect to socket
+        socket.emit('user-joined', username);
+        
+        // Transition to chat screen
+        setTimeout(() => {
+            welcomeScreen.classList.remove('active');
+            chatScreen.classList.add('active');
+            hideLoadingScreen();
+            messageInput.focus();
+        }, 1000);
+    }, 500);
+}
+
+// Send Message Function
+function sendMessage() {
+    const message = messageInput.value.trim();
+    if (!message) return;
+
+    // Check if it's an AI command
+    if (message.startsWith('/ai ')) {
+        openAIModal();
+        const aiPrompt = message.substring(4);
+        addAIMessage(aiPrompt, 'user');
+        showAITyping();
+    }
+
+    // Send message data
+    const messageData = {
+        message: message,
+        replyTo: replyingTo
+    };
+
+    socket.emit('chat-message', messageData);
+
+    // Add send animation
+    sendBtn.classList.add('sending');
+    setTimeout(() => {
+        sendBtn.classList.remove('sending');
+    }, 600);
+
+    // Clear input and reply
+    messageInput.value = '';
+    messageInput.style.height = 'auto';
+    clearReply();
+
+    // Stop typing indicator
+    if (isTyping) {
+        isTyping = false;
+        socket.emit('typing-stop');
+    }
+}
+
+// Socket Event Listeners
+socket.on('user-color-assigned', function(data) {
+    userColor = data.color;
+});
+
+socket.on('admin-message', function(data) {
+    addAdminMessage(data.message);
+});
+
+socket.on('chat-message', function(data) {
+    addMessage(data);
+    playMessageSound();
+});
+
+socket.on('user-notification', function(data) {
+    showUserNotification(data);
+});
+
+socket.on('update-online-count', function(count) {
+    updateOnlineCount(count);
+});
+
+socket.on('user-typing', function(data) {
+    if (data.isTyping) {
+        showTypingIndicator(data);
+    } else {
+        hideTypingIndicator(data.username);
     }
 });
 
-// --- Message Sending Function ---
-async function sendMessage() {
-    const messageText = messageInput ? messageInput.value.trim() : '';
-    if (!messageText) return;
+socket.on('message-reaction', function(data) {
+    addMessageReaction(data);
+    if (data.username !== currentUser) {
+        showReactionNotification(data);
+    }
+});
 
-    if (messageText.toLowerCase().startsWith('/ai ')) {
-        // Handle AI command
-        const prompt = messageText.substring(4).trim();
-        if (prompt) {
-            appendAdminMessage("Connecting to Bro_Chatz AI...");
-            try {
-                const response = await fetch('/ask-ai', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prompt: prompt })
-                });
-                const data = await response.json();
-                if (data.response) {
-                    // AI response will be received via 'chat_message' event from server
-                } else {
-                    appendAdminMessage(`AI Error: ${data.error || 'Unknown error'}`);
-                }
-            } catch (error) {
-                console.error('Error fetching AI response:', error);
-                appendAdminMessage('Failed to connect to AI service.');
-            }
-        } else {
-            appendAdminMessage('Please provide a prompt for the AI (e.g., /ai What is the weather?).');
-        }
+socket.on('ai-response', function(data) {
+    hideAITyping();
+    addAIMessage(data.response, 'bot');
+});
+
+socket.on('ai-typing', function(isTyping) {
+    if (isTyping) {
+        showAITyping();
     } else {
-        // Regular message or reply
-        if (currentReplyMessageId) {
-            socket.emit('chat_message', messageText, currentReplyMessageId);
-            cancelReply();
-        } else {
-            socket.emit('chat_message', messageText);
-        }
+        hideAITyping();
     }
+});
 
-    if (messageInput) {
-        messageInput.value = '';
-    }
-    socket.emit('stop_typing');
-}
+// Message Functions
+function addMessage(data) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'message';
+    messageDiv.dataset.messageId = data.messageId;
 
-// Function to generate a random RGB color (always generate for 'other' users)
-function getRandomRgbColor() {
-    const r = Math.floor(Math.random() * 256);
-    const g = Math.floor(Math.random() * 256);
-    const b = Math.floor(Math.random() * 256);
-
-    // Calculate brightness to ensure visibility on light backgrounds.
-    // A common formula for perceived brightness (luminance)
-    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-
-    // If the color is too light, make it a bit darker to stand out.
-    // 180 is an arbitrary threshold, can be adjusted.
-    if (brightness > 180) {
-        return `rgb(${Math.floor(r * 0.7)}, ${Math.floor(g * 0.7)}, ${Math.floor(b * 0.7)})`;
-    }
-    // If the color is too dark, ensure it's not so dark that it blends into light text on a light background.
-    // This is less critical if text color is fixed, but good practice.
-    if (brightness < 70) { // If very dark, lighten it a bit
-        return `rgb(${Math.min(255, r + 50)}, ${Math.min(255, g + 50)}, ${Math.min(255, b + 50)})`;
-    }
-    return `rgb(${r}, ${g}, ${b})`;
-}
-
-// --- Message Display Function ---
-function displayMessage(username, message, timestamp, type = 'user', messageId = null, replyTo = null, reactions = {}, color = null) {
-    if (!messagesContainer) return;
-
-    const messageBubble = document.createElement('div');
-    messageBubble.classList.add('message-bubble');
-
-    let usernameColor = color; // Use color from server if provided (e.g., for self or AI)
-
-    if (username === currentUsername && type === 'user') {
-        messageBubble.classList.add('me');
-        // Your own messages (class 'me') have a username color defined in CSS (e.g., #2e7d32).
-        // If you want YOUR username to also be RGB, remove the 'me' specific username color from CSS
-        // and add `usernameColor = getRandomRgbColor();` here.
-    } else if (type === 'user') {
-        messageBubble.classList.add('other');
-        // Ensure RGB for 'other' users. Generate if not provided by server.
-        if (!usernameColor) {
-            usernameColor = getRandomRgbColor();
-        }
-    }
-
-    if (type === 'admin') {
-        messageBubble.classList.add('admin');
-        // Admin messages have fixed colors in CSS.
-    }
-
-    if (messageId) {
-        messageBubble.dataset.messageId = messageId;
-    }
-
-    let replySnippetHtml = '';
-    if (replyTo && replyTo.username && replyTo.text) {
-        replySnippetHtml = `
-            <div class="reply-snippet" data-replied-message-id="${replyTo.messageId}">
-                <span class="reply-username">@${replyTo.username}</span>
-                <span class="reply-text">${replyTo.text}</span>
+    const isOwnMessage = data.username === currentUser;
+    
+    let replyHtml = '';
+    if (data.replyTo) {
+        replyHtml = `
+            <div class="reply-preview" style="border-left-color: ${data.replyTo.color}">
+                <strong>${data.replyTo.username}:</strong> ${data.replyTo.message.substring(0, 50)}${data.replyTo.message.length > 50 ? '...' : ''}
             </div>
         `;
     }
 
-    const reactionsHtml = Object.entries(reactions).map(([emoji, count]) => `
-        <span class="reaction-item">${emoji} <small>${count}</small></span>
-    `).join('');
-
-    const usernameSpanStyle = usernameColor ? `style="color: ${usernameColor};"` : '';
-
-    messageBubble.innerHTML = `
-        ${replySnippetHtml}
-        <span class="username" ${usernameSpanStyle}>${username}</span>
-        <span class="message-text">${message}</span>
-        <span class="timestamp">${timestamp}</span>
-        <div class="message-reactions">${reactionsHtml}</div>
+    messageDiv.innerHTML = `
+        <div class="message-bubble" style="border-left: 3px solid ${data.color}">
+            ${replyHtml}
+            <div class="message-header">
+                <span class="username" style="color: ${data.color}">${data.username}</span>
+                <span class="timestamp">${formatTime(data.timestamp)}</span>
+            </div>
+            <div class="message-content">${escapeHtml(data.message)}</div>
+            <div class="message-reactions"></div>
+        </div>
     `;
 
-    messagesContainer.appendChild(messageBubble);
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
-
-    // Add click listener to reply snippet to scroll to the original message
-    if (replyTo && replyTo.messageId) {
-        const snippet = messageBubble.querySelector('.reply-snippet');
-        if (snippet) {
-            snippet.addEventListener('click', () => {
-                const originalMessage = messagesContainer.querySelector(`[data-message-id="${replyTo.messageId}"]`);
-                if (originalMessage) {
-                    originalMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    originalMessage.classList.add('highlight');
-                    setTimeout(() => originalMessage.classList.remove('highlight'), 1500);
-                }
-            });
-        }
-    }
-}
-
-// Helper function to append an admin message
-function appendAdminMessage(message) {
-    displayMessage('Admin', message, getCurrentTimestamp(), 'admin');
-}
-
-// --- Reply Mode Functions ---
-function activateReplyMode(messageId, username, text) {
-    currentReplyMessageId = messageId;
-    if (replySnippetContainer && replySnippetText) {
-        replySnippetContainer.classList.add('active');
-        replySnippetText.innerHTML = `Replying to: <span class="reply-username">@${username}</span> "${text.substring(0, 50)}${text.length > 50 ? '...' : ''}"`;
-    }
-    if (messageInput) {
-        messageInput.focus();
-    }
-}
-
-function cancelReply() {
-    currentReplyMessageId = null;
-    if (replySnippetContainer && replySnippetText) {
-        replySnippetContainer.classList.remove('active');
-        // Give time for fade-out before clearing text
-        setTimeout(() => {
-            replySnippetText.textContent = '';
-        }, 300); // Match CSS transition duration
-    }
-    if (messageInput) {
-        messageInput.focus();
-    }
-}
-
-// --- Action Popup Functions (for reactions/replies context menu) ---
-function showActionPopup(x, y) {
-    if (!actionPopup) return;
-
-    // Position the popup
-    actionPopup.style.left = `${x}px`;
-    actionPopup.style.top = `${y}px`;
-
-    // Ensure it's within viewport bounds
-    // Temporarily make active to get dimensions
-    actionPopup.classList.add('active');
-    const popupRect = actionPopup.getBoundingClientRect();
-
-    // Adjust if it goes off screen right
-    if (popupRect.right > window.innerWidth - 10) {
-        actionPopup.style.left = `${window.innerWidth - popupRect.width - 10}px`;
-    }
-    // Adjust if it goes off screen bottom
-    if (popupRect.bottom > window.innerHeight - 10) {
-        actionPopup.style.top = `${window.innerHeight - popupRect.height - 10}px`;
-    }
-    // Adjust if it goes off screen top (less likely for context menu)
-    if (popupRect.top < 10) {
-        actionPopup.style.top = '10px';
-    }
-
-    actionPopup.classList.add('active');
-}
-
-function hideActionPopup() {
-    if (actionPopup) {
-        actionPopup.classList.remove('active');
-    }
-    if (lastTouchTargetMessage) {
-        lastTouchTargetMessage.classList.remove('long-press-active');
-    }
-    lastTouchTargetMessage = null;
-}
-
-// --- Pointer/Touch Event Handlers for Long Press (Context Menu) ---
-function handlePointerDown(e) {
-    const targetBubble = e.target.closest('.message-bubble');
-    if (!targetBubble || targetBubble.classList.contains('admin')) {
-        return; // Don't allow long press/right click on admin messages
-    }
-
-    // Only proceed if it's a left click or a touch
-    if (e.button === 0 || e.touches) {
-        lastTouchTargetMessage = targetBubble;
-        if (lastTouchTargetMessage) {
-            lastTouchTargetMessage.classList.add('long-press-active');
-            lastTouchTargetMessage.dataset.initialX = e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
-            lastTouchTargetMessage.dataset.initialY = e.clientY || (e.touches && e.touches[0] ? e.touches[0].clientY : 0);
-        }
-
-        lastTouchStartTime = Date.now();
-        longPressTimer = setTimeout(() => {
-            if (lastTouchTargetMessage && actionPopup) {
-                const rect = lastTouchTargetMessage.getBoundingClientRect();
-                let popupX, popupY;
-
-                // Try to show popup above the message first
-                popupX = rect.left + rect.width / 2; // Center horizontally with message
-                popupY = rect.top; // Start at top of message
-
-                showActionPopup(popupX, popupY);
-            }
-        }, LONG_PRESS_THRESHOLD);
-    }
-}
-
-function handlePointerUp(e) {
-    clearTimeout(longPressTimer);
-    longPressTimer = null;
-
-    if (lastTouchTargetMessage) {
-        if (Date.now() - lastTouchStartTime < LONG_PRESS_THRESHOLD) {
-            // This was a short tap, remove highlight immediately
-            lastTouchTargetMessage.classList.remove('long-press-active');
-            // If the popup was already active (e.g., from a previous long press), hide it
-            if (actionPopup && actionPopup.classList.contains('active')) {
-                hideActionPopup();
-            }
-        }
-    }
-
-    if (lastTouchTargetMessage && lastTouchTargetMessage.dataset) {
-        delete lastTouchTargetMessage.dataset.initialX;
-        delete lastTouchTargetMessage.dataset.initialY;
-    }
-}
-
-function handlePointerMove(e) {
-    if (longPressTimer && lastTouchTargetMessage) {
-        const initialX = parseFloat(lastTouchTargetMessage.dataset.initialX || '0');
-        const initialY = parseFloat(lastTouchTargetMessage.dataset.initialY || '0');
-
-        const currentX = e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
-        const currentY = e.clientY || (e.touches && e.touches[0] ? e.touches[0].clientY : 0);
-
-        const distance = Math.sqrt(Math.pow(currentX - initialX, 2) + Math.pow(currentY - initialY, 2));
-
-        if (distance > 10) { // A threshold of 10 pixels movement to cancel long press
-            clearTimeout(longPressTimer);
-            longPressTimer = null;
-            if (lastTouchTargetMessage) {
-                lastTouchTargetMessage.classList.remove('long-press-active');
-            }
-        }
-    }
-}
-
-// --- User Status Notification Functions ---
-function displayUserStatus(message, type = 'join') {
-    if (!userStatusNotifications) return;
-
-    const statusDiv = document.createElement('div');
-    statusDiv.classList.add('user-status-message');
-    statusDiv.textContent = message;
-
-    if (type === 'joined') {
-        statusDiv.classList.add('join');
-    } else if (type === 'left') {
-        statusDiv.classList.add('leave');
-    }
-
-    userStatusNotifications.appendChild(statusDiv);
-
-    // Trigger the show animation after appending
-    requestAnimationFrame(() => {
-        statusDiv.classList.add('show');
-    });
-
-    // Remove status message after a delay with fade-out
+    chatMessages.appendChild(messageDiv);
+    scrollToBottom();
+    
+    // Add entrance animation
     setTimeout(() => {
-        statusDiv.classList.remove('show'); // Trigger fade-out
-        statusDiv.addEventListener('transitionend', () => {
-            statusDiv.remove(); // Remove from DOM after transition
-        }, { once: true });
-    }, 12000); // Remove after 12 seconds (including transition)
+        messageDiv.style.transform = 'translateY(0)';
+        messageDiv.style.opacity = '1';
+    }, 50);
 }
 
+function addAdminMessage(message) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'message admin-message';
+    
+    messageDiv.innerHTML = `
+        <div class="message-bubble">
+            <div class="message-content">
+                <i class="fas fa-robot"></i> ${message}
+            </div>
+        </div>
+    `;
 
-// --- Socket.IO Event Handlers (Receiving messages/updates from server) ---
+    chatMessages.appendChild(messageDiv);
+    scrollToBottom();
+}
 
-socket.on('connect', () => {
-    console.log('Connected to chat server!');
-});
+function addAIMessage(message, type) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `ai-chat-message ai-${type}-message`;
+    
+    const avatar = type === 'user' ? '👤' : '🤖';
+    
+    messageDiv.innerHTML = `
+        <div class="message-header">
+            <span>${avatar} ${type === 'user' ? 'You' : 'AI Assistant'}</span>
+        </div>
+        <div class="message-content">${escapeHtml(message)}</div>
+    `;
 
-socket.on('disconnect', () => {
-    console.log('Disconnected from chat server!');
-    displayUserStatus('You have been disconnected. Please refresh to rejoin.', 'left');
-});
+    aiMessages.appendChild(messageDiv);
+    aiMessages.scrollTop = aiMessages.scrollHeight;
+}
 
-// IMPORTANT: Handle the 'username_set' event from the server
-socket.on('username_set', (data) => {
-    console.log('Server confirmed username set:', data.username);
-    currentUsername = data.username;
+// Typing Indicators
+function showTypingIndicator(data) {
+    // Remove existing indicator for this user
+    hideTypingIndicator(data.username);
+    
+    const typingDiv = document.createElement('div');
+    typingDiv.className = 'typing-indicator';
+    typingDiv.dataset.username = data.username;
+    
+    typingDiv.innerHTML = `
+        <span style="color: ${data.color}">${data.username}</span> is typing
+        <div class="typing-dots">
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+        </div>
+    `;
+    
+    typingIndicators.appendChild(typingDiv);
+    scrollToBottom();
+}
 
-    // --- Screen Switching Logic ---
-    if (welcomeScreen && chatScreen) {
-        welcomeScreen.classList.remove('active'); // Hide welcome screen
-        chatScreen.classList.add('active'); // Show chat screen
-        if (messageInput) {
-            messageInput.focus(); // Focus the message input
-        }
-        console.log('Switched to chat screen. Message input focused.');
-    } else {
-        console.error('Could not find welcomeScreen, chatScreen, or messageInput to switch views.');
-    }
-    displayUserStatus(`Welcome, ${currentUsername}!`, 'joined'); // Welcome greeting
-});
-
-// IMPORTANT: Handle errors when setting username
-socket.on('username_set_error', (errorData) => {
-    console.error('Username setting failed:', errorData.message);
-    if (usernameInput) {
-        usernameInput.classList.add('shake');
-        usernameInput.placeholder = errorData.message;
+function hideTypingIndicator(username) {
+    const existingIndicator = typingIndicators.querySelector(`[data-username="${username}"]`);
+    if (existingIndicator) {
+        existingIndicator.style.animation = 'typingSlideOut 0.3s ease-in forwards';
         setTimeout(() => {
-            usernameInput.classList.remove('shake');
-            usernameInput.placeholder = 'Enter your username'; // Reset placeholder after shake
-        }, 1000);
+            existingIndicator.remove();
+        }, 300);
     }
-    appendAdminMessage(`Error: ${errorData.message}`);
-});
-
-
-// Update the count of online users
-socket.on('user_count', (count) => {
-    if (onlineUsersCount) {
-        onlineUsersCount.textContent = count;
-    }
-});
-
-// Receive existing message history on connection
-socket.on('message_history', (history) => {
-    if (messagesContainer) {
-        messagesContainer.innerHTML = ''; // Clear existing messages
-        history.forEach(msg => {
-            displayMessage(msg.username, msg.message, msg.timestamp, msg.type, msg.messageId, msg.replyTo, msg.reactions, msg.color);
-        });
-        messagesContainer.scrollTop = messagesContainer.scrollHeight; // Scroll to bottom after loading history
-    }
-});
-
-// Receive a regular chat message (also used for AI responses now)
-socket.on('chat_message', (data) => {
-    const { username, message, timestamp, messageId, replyTo, reactions, type, color } = data;
-    displayMessage(username, message, timestamp, type, messageId, replyTo, reactions, color);
-});
-
-// Receive an admin message (e.g., welcome, error messages)
-socket.on('admin_message', (data) => {
-    const { username, message, timestamp, messageId, type } = data;
-    displayMessage(username, message, timestamp, type, messageId);
-});
-
-
-// Handle 'typing_users_update' event from server
-socket.on('typing_users_update', (typersArray) => {
-    if (typingIndicator) {
-        const otherTypers = typersArray.filter(user => user !== currentUsername);
-
-        if (otherTypers.length > 0) {
-            typingIndicator.textContent = `${otherTypers.join(', ')} is typing...`;
-            typingIndicator.classList.add('active');
-        } else {
-            typingIndicator.classList.remove('active');
-            typingIndicator.textContent = '';
-        }
-    }
-});
-
-// Handle user joined/left status updates
-socket.on('user_status', (data) => {
-    const { username, status } = data;
-    // Only display status if it's not the current user's own status upon joining
-    // The welcome greeting is handled separately on 'username_set'
-    if (username !== currentUsername || status === 'left') {
-        displayUserStatus(`${username} has ${status === 'joined' ? 'joined' : 'left'}.`, status);
-    }
-});
-
-// Handle message reaction updates
-socket.on('message_reacted', ({ messageId, updatedReactions }) => {
-    if (messagesContainer) {
-        const messageBubble = messagesContainer.querySelector(`[data-message-id="${messageId}"]`);
-        if (messageBubble) {
-            const reactionsContainer = messageBubble.querySelector('.message-reactions');
-            if (reactionsContainer) {
-                reactionsContainer.innerHTML = Object.entries(updatedReactions).map(([emoji, count]) => `
-                    <span class="reaction-item">${emoji} <small>${count}</small></span>
-                `).join('');
-            }
-        }
-    }
-});
-
-// --- Utility Functions ---
-// Gets the current time formatted as HH:MM AM/PM
-function getCurrentTimestamp() {
-    const now = new Date();
-    return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
+
+// AI Modal Functions
+function openAIModal() {
+    aiModal.style.display = 'flex';
+    aiMessages.innerHTML = '';
+    addAIMessage("Hello! I'm your AI assistant. How can I help you today?", 'bot');
+}
+
+function closeAIModal() {
+    aiModal.style.display = 'none';
+}
+
+function showAITyping() {
+    const typingDiv = document.createElement('div');
+    typingDiv.className = 'ai-chat-message ai-bot-message ai-typing';
+    typingDiv.innerHTML = `
+        <div class="message-header">
+            <span>🤖 AI Assistant</span>
+        </div>
+        <div class="typing-dots">
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+        </div>
+    `;
+    aiMessages.appendChild(typingDiv);
+    aiMessages.scrollTop = aiMessages.scrollHeight;
+}
+
+function hideAITyping() {
+    const typingMessage = aiMessages.querySelector('.ai-typing');
+    if (typingMessage) {
+        typingMessage.remove();
+    }
+}
+
+// Reaction System
+function showReactionPicker(event, messageBubble) {
+    selectedMessage = messageBubble.closest('.message');
+    
+    const rect = messageBubble.getBoundingClientRect();
+    reactionPicker.style.display = 'block';
+    reactionPicker.style.left = Math.min(rect.left, window.innerWidth - 200) + 'px';
+    reactionPicker.style.top = (rect.top - reactionPicker.offsetHeight - 10) + 'px';
+    
+    // Add show animation
+    reactionPicker.style.animation = 'pickerSlideIn 0.3s ease-out';
+}
+
+function hideReactionPicker() {
+    reactionPicker.style.display = 'none';
+    selectedMessage = null;
+}
+
+function addReactionAnimation(emojiElement) {
+    // Create floating emoji animation
+    const floatingEmoji = document.createElement('div');
+    floatingEmoji.textContent = emojiElement.textContent;
+    floatingEmoji.style.position = 'fixed';
+    floatingEmoji.style.left = emojiElement.getBoundingClientRect().left + 'px';
+    floatingEmoji.style.top = emojiElement.getBoundingClientRect().top + 'px';
+    floatingEmoji.style.fontSize = '2rem';
+    floatingEmoji.style.pointerEvents = 'none';
+    floatingEmoji.style.zIndex = '9999';
+    floatingEmoji.style.animation = 'reactionFloat 1s ease-out forwards';
+    
+    document.body.appendChild(floatingEmoji);
+    
+    setTimeout(() => {
+        floatingEmoji.remove();
+    }, 1000);
+}
+
+// Add reaction float animation
+const reactionStyle = document.createElement('style');
+reactionStyle.textContent = `
+    @keyframes reactionFloat {
+        0% { transform: scale(1) translateY(0); opacity: 1; }
+        50% { transform: scale(1.5) translateY(-30px); opacity: 0.8; }
+        100% { transform: scale(0.5) translateY(-60px); opacity: 0; }
+    }
+    
+    @keyframes typingSlideOut {
+        0% { opacity: 1; transform: translateX(0); }
+        100% { opacity: 0; transform: translateX(-20px); }
+    }
+`;
+document.head.appendChild(reactionStyle);
+
+function addMessageReaction(data) {
+    const message = document.querySelector(`[data-message-id="${data.messageId}"]`);
+    if (message) {
+        const reactionsContainer = message.querySelector('.message-reactions');
+        
+        // Check if reaction already exists
+        let existingReaction = reactionsContainer.querySelector(`[data-emoji="${data.emoji}"]`);
+        
+        if (existingReaction) {
+            const count = existingReaction.querySelector('.reaction-count');
+            count.textContent = parseInt(count.textContent) + 1;
+            existingReaction.style.animation = 'reactionBounce 0.3s ease-out';
+        } else {
+            const reactionElement = document.createElement('span');
+            reactionElement.className = 'message-reaction';
+            reactionElement.dataset.emoji = data.emoji;
+            reactionElement.innerHTML = `
+                ${data.emoji} <span class="reaction-count">1</span>
+            `;
+            reactionElement.style.animation = 'reactionSlideIn 0.3s ease-out';
+            reactionsContainer.appendChild(reactionElement);
+        }
+    }
+}
+
+// Reply System
+function startReply(messageElement) {
+    const username = messageElement.querySelector('.username').textContent;
+    const messageContent = messageElement.querySelector('.message-content').textContent;
+    const userColor = messageElement.querySelector('.username').style.color;
+    
+    replyingTo = {
+        username: username,
+        message: messageContent,
+        color: userColor
+    };
+    
+    replyPreview.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <strong style="color: ${userColor}">Replying to ${username}:</strong>
+                <div style="color: rgba(255,255,255,0.7); font-size: 0.9rem; margin-top: 2px;">
+                    ${messageContent.substring(0, 50)}${messageContent.length > 50 ? '...' : ''}
+                </div>
+            </div>
+            <button onclick="clearReply()" style="background: none; border: none; color: rgba(255,255,255,0.5); cursor: pointer; font-size: 1.2rem;">×</button>
+        </div>
+    `;
+    replyPreview.style.display = 'block';
+    messageInput.focus();
+}
+
+function clearReply() {
+    replyingTo = null;
+    replyPreview.style.display = 'none';
+}
+
+// Notification System
+function showUserNotification(data) {
+    const notification = document.createElement('div');
+    notification.className = `notification ${data.type}`;
+    
+    const icon = data.type === 'join' ? '🎉' : '👋';
+    
+    notification.innerHTML = `
+        <div class="notification-content">
+            ${icon} <strong style="color: ${data.color}">${data.username}</strong> ${data.message}
+        </div>
+    `;
+    
+    notificationContainer.appendChild(notification);
+    
+    // Auto remove after animation
+    setTimeout(() => {
+        notification.classList.add('notification-burst');
+        setTimeout(() => {
+            notification.remove();
+        }, 500);
+    }, 3000);
+}
+
+function showReactionNotification(data) {
+    const notification = document.createElement('div');
+    notification.className = 'notification reaction';
+    
+    notification.innerHTML = `
+        <div class="notification-content">
+            ${data.emoji} <strong style="color: ${data.color}">${data.username}</strong> reacted to your message
+        </div>
+    `;
+    
+    notificationContainer.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.classList.add('notification-burst');
+        setTimeout(() => {
+            notification.remove();
+        }, 500);
+    }, 2000);
+}
+
+// Utility Functions
+function updateOnlineCount(count) {
+    onlineCount.textContent = count;
+    
+    // Add pulse animation
+    onlineCount.style.animation = 'none';
+    setTimeout(() => {
+        onlineCount.style.animation = 'countPulse 0.5s ease-out';
+    }, 10);
+}
+
+// Add count pulse animation
+const countStyle = document.createElement('style');
+countStyle.textContent = `
+    @keyframes countPulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.2); }
+        100% { transform: scale(1); }
+    }
+    
+    @keyframes reactionBounce {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.3); }
+        100% { transform: scale(1); }
+    }
+    
+    @keyframes reactionSlideIn {
+        0% { opacity: 0; transform: scale(0.5); }
+        100% { opacity: 1; transform: scale(1); }
+    }
+    
+    .message-reaction {
+        display: inline-block;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 15px;
+        padding: 4px 8px;
+        margin: 5px 5px 0 0;
+        font-size: 0.8rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .message-reaction:hover {
+        background: rgba(255, 255, 255, 0.2);
+        transform: scale(1.1);
+    }
+    
+    .reaction-count {
+        font-weight: 600;
+        margin-left: 3px;
+    }
+`;
+document.head.appendChild(countStyle);
+
+function scrollToBottom() {
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function formatTime(timestamp) {
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function playMessageSound() {
+    // Create a subtle notification sound
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+    oscillator.frequency.setValueAtTime(600, audioContext.currentTime + 0.1);
+    
+    gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+    gainNode.gain.linearRampToValueAtTime(0.1, audioContext.currentTime + 0.01);
+    gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.2);
+    
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + 0.2);
+}
+
+function showLoadingScreen() {
+    loadingScreen.style.display = 'flex';
+}
+
+function hideLoadingScreen() {
+    loadingScreen.style.display = 'none';
+}
+
+// Initialize particle effects on scroll
+chatMessages.addEventListener('scroll', function() {
+    if (Math.random() > 0.95) { // 5% chance on scroll
+        createScrollParticle();
+    }
+});
+
+function createScrollParticle() {
+    const particle = document.createElement('div');
+    particle.style.position = 'absolute';
+    particle.style.width = '4px';
+    particle.style.height = '4px';
+    particle.style.background = `hsl(${Math.random() * 360}, 70%, 60%)`;
+    particle.style.borderRadius = '50%';
+    particle.style.right = '10px';
+    particle.style.top = Math.random() * chatMessages.offsetHeight + 'px';
+    particle.style.pointerEvents = 'none';
+    particle.style.animation = 'particleFade 2s ease-out forwards';
+    
+    chatMessages.appendChild(particle);
+    
+    setTimeout(() => {
+        particle.remove();
+    }, 2000);
+}
+
+// Add final particle animation
+const particleStyle = document.createElement('style');
+particleStyle.textContent = `
+    @keyframes particleFade {
+        0% { opacity: 1; transform: translateX(0); }
+        100% { opacity: 0; transform: translateX(-50px); }
+    }
+`;
+document.head.appendChild(particleStyle);
+
+// Add some final polish effects
+document.addEventListener('mousemove', function(e) {
+    if (Math.random() > 0.99) { // Very rare cursor trail
+        createCursorTrail(e.clientX, e.clientY);
+    }
+});
+
+function createCursorTrail(x, y) {
+    const trail = document.createElement('div');
+    trail.style.position = 'fixed';
+    trail.style.left = x + 'px';
+    trail.style.top = y + 'px';
+    trail.style.width = '3px';
+    trail.style.height = '3px';
+    trail.style.background = `hsl(${Math.random() * 360}, 70%, 60%)`;
+    trail.style.borderRadius = '50%';
+    trail.style.pointerEvents = 'none';
+    trail.style.zIndex = '999';
+    trail.style.animation = 'trailFade 1s ease-out forwards';
+    
+    document.body.appendChild(trail);
+    
+    setTimeout(() => {
+        trail.remove();
+    }, 1000);
+}
+
+// Add trail animation
+const trailStyle = document.createElement('style');
+trailStyle.textContent = `
+    @keyframes trailFade {
+        0% { opacity: 0.8; transform: scale(1); }
+        100% { opacity: 0; transform: scale(0); }
+    }
+`;
+document.head.appendChild(trailStyle);

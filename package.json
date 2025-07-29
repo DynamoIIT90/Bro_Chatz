@@ -1,25 +1,32 @@
 {
-  "name": "brochatz",
-  "version": "1.0.0",
-  "description": "A real-time chat application with cool UI, animations, and an AI assistant.",
+  "name": "bro_chatz",
+  "version": "2.0.0",
+  "description": "Ultimate Real-time Chat Experience with AI Integration",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "dev": "nodemon server.js"
   },
   "keywords": [
     "chat",
     "realtime",
     "socket.io",
-    "node.js",
-    "express",
-    "gemini-api",
-    "ai"
+    "ai",
+    "gemini",
+    "websocket"
   ],
-  "author": "AI Assistant",
+  "author": "BRO_CHATZ Team",
   "license": "MIT",
   "dependencies": {
-    "express": "^4.19.2",
-    "node-fetch": "^2.7.0",
-    "socket.io": "^4.7.5"
+    "express": "^4.18.2",
+    "socket.io": "^4.7.4",
+    "dotenv": "^16.3.1",
+    "@google/generative-ai": "^0.2.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  },
+  "engines": {
+    "node": ">=16.0.0"
   }
 }

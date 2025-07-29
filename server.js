@@ -1,350 +1,179 @@
-// server.js
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
 const path = require('path');
-const fetch = require('node-fetch'); // Make sure you have 'node-fetch' installed: npm install node-fetch@2
+require('dotenv').config();
 
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
     cors: {
-        origin: "*", // Allow all origins for development. Restrict this in production.
+        origin: "*",
         methods: ["GET", "POST"]
     }
 });
 
-const PORT = process.env.PORT || 3000;
-
-// --- ADD THIS BLOCK FOR CACHE CONTROL (Crucial for development) ---
-// This middleware explicitly tells browsers and proxies not to cache static assets.
-app.use((req, res, next) => {
-    // Only apply these headers to your static files (HTML, CSS, JS)
-    // You can adjust this regex if you have other static assets that should be cached
-    if (req.path.match(/\.(html|js|css)$/)) {
-        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-        res.setHeader('Pragma', 'no-cache');
-        res.setHeader('Expires', '0');
-    }
-    next();
-});
-// --- END ADDED BLOCK ---
-
-// Serve static files from the 'public' directory
+// Serve static files
 app.use(express.static(path.join(__dirname, 'public')));
-
-// --- Configuration for AI (Gemini) ---
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'YOUR_GEMINI_API_KEY_HERE'; // *** IMPORTANT: Set this via environment variable! ***
-
-console.log('Server starting. GEMINI_API_KEY:', GEMINI_API_KEY && GEMINI_API_KEY !== 'YOUR_GEMINI_API_KEY_HERE' ? '******' + GEMINI_API_KEY.substring(GEMINI_API_KEY.length - 4) : 'NOT SET or DEFAULT');
-
-if (!GEMINI_API_KEY || GEMINI_API_KEY === 'YOUR_GEMINI_API_KEY_HERE') {
-    console.error('ERROR: GEMINI_API_KEY environment variable is not set or is default!');
-    console.error('AI features will not work. Please set it before starting the server.');
-}
-
-// Middleware to parse JSON bodies from incoming requests (for AI endpoint)
 app.use(express.json());
 
-// In-memory data stores (reset on server restart)
-const users = {}; // Store { socket.id: { username: "...", color: "..." } }
-const messageHistory = []; // Store message objects
-let messageIdCounter = 0; // Simple counter for unique message IDs
-const typingUsers = {}; // Store { username: timestamp }
+// Store connected users
+const connectedUsers = new Map();
+const userColors = [
+    '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
+    '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9',
+    '#F8C471', '#82E0AA', '#F1948A', '#85C1E9', '#D7BDE2'
+];
 
-// Function to generate a random RGB color.
-function getRandomColor() {
-    const r = Math.floor(Math.random() * 200); // Lighter colors
-    const g = Math.floor(Math.random() * 200);
-    const b = Math.floor(Math.random() * 200);
-    return `rgb(${r}, ${g}, ${b})`;
-}
+// Gemini AI Integration
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// Helper to get current timestamp
-function getCurrentTimestamp() {
-    const now = new Date();
-    return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-}
-
-// --- NEW: AI Proxy Endpoint ---
-app.post('/ask-ai', async (req, res) => {
-    const userPrompt = req.body.prompt;
-    if (!userPrompt) {
-        return res.status(400).json({ error: 'Prompt is required.' });
-    }
-    if (!GEMINI_API_KEY || GEMINI_API_KEY === 'AIzaSyC0vAo8oWOb22IGUy2J5TrzrKFxobpMj5g') {
-        return res.status(500).json({ error: 'Gemini API key is not configured on the server.' });
-    }
-
+async function generateAIResponse(prompt) {
     try {
-        const chatHistory = [{ role: "user", parts: [{ text: userPrompt }] }];
-        const payload = { contents: chatHistory };
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        return response.text();
+    } catch (error) {
+        console.error('AI Error:', error);
+        return "Sorry, I'm having trouble processing your request right now. Please try again later!";
+    }
+}
 
-        const geminiResponse = await fetch(apiUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
+io.on('connection', (socket) => {
+    console.log('New user connected:', socket.id);
+
+    // Handle user joining
+    socket.on('user-joined', (username) => {
+        // Assign unique color
+        const colorIndex = connectedUsers.size % userColors.length;
+        const userColor = userColors[colorIndex];
+        
+        connectedUsers.set(socket.id, {
+            username,
+            color: userColor,
+            joinTime: new Date()
         });
 
-        const geminiResult = await geminiResponse.json();
+        // Send welcome message from BRO CHATZ ADMIN
+        socket.emit('admin-message', {
+            message: `🎉 Welcome to BRO_CHATZ, ${username}! Ready to chat with awesome people? Let's get this party started! 🚀`,
+            timestamp: new Date(),
+            type: 'welcome'
+        });
 
-        if (geminiResponse.ok && geminiResult.candidates && geminiResult.candidates.length > 0 &&
-            geminiResult.candidates[0].content && geminiResult.candidates[0].content.parts &&
-            geminiResult.candidates[0].content.parts.length > 0) {
-            const aiText = geminiResult.candidates[0].content.parts[0].text;
-            res.json({ response: aiText });
-        } else {
-            console.error('Gemini API response structure unexpected or error from Gemini:', geminiResult);
-            res.status(500).json({ error: geminiResult.error ? geminiResult.error.message : 'AI could not generate a valid response.' });
-        }
+        // Notify all users about new join
+        socket.broadcast.emit('user-notification', {
+            message: `${username} entered the chatz`,
+            type: 'join',
+            username,
+            color: userColor,
+            timestamp: new Date()
+        });
 
-    } catch (error) {
-        console.error('Error calling Gemini API from server:', error);
-        res.status(500).json({ error: 'Failed to connect to AI service.' });
-    }
-});
-
-
-// --- Socket.IO Connection Handler ---
-io.on('connection', (socket) => {
-    console.log(`User connected: ${socket.id}`);
-
-    // Update and send online user count immediately
-    io.emit('user_count', Object.keys(users).length);
-
-    // Send existing message history to the newly connected user
-    socket.emit('message_history', JSON.parse(JSON.stringify(messageHistory))); // Deep copy to avoid reference issues
-
-    // Handle initial username setting (from welcome screen)
-    socket.on('set_username', (username) => {
-        const trimmedUsername = username.trim();
-
-        if (!trimmedUsername || trimmedUsername.length < 2 || trimmedUsername.length > 20) {
-            socket.emit('admin_message', {
-                username: 'Admin',
-                message: 'Username must be between 2 and 20 characters long.',
-                timestamp: getCurrentTimestamp(),
-                messageId: `msg-${++messageIdCounter}`,
-                type: 'admin'
-            });
-            socket.emit('username_set_error', { message: 'Username validation failed: length.' }); // Inform client about failure
-            return;
-        }
-
-        const usernameTaken = Object.values(users).some(user => user.username.toLowerCase() === trimmedUsername.toLowerCase());
-        if (usernameTaken) {
-            socket.emit('admin_message', {
-                username: 'Admin',
-                message: `Username "${trimmedUsername}" is already taken. Please choose another.`,
-                timestamp: getCurrentTimestamp(),
-                messageId: `msg-${++messageIdCounter}`,
-                type: 'admin'
-            });
-            socket.emit('username_set_error', { message: 'Username validation failed: already taken.' }); // Inform client about failure
-            return;
-        }
-
-        const userColor = getRandomColor();
-        const oldUserData = users[socket.id];
-
-        if (oldUserData && oldUserData.username) {
-            // User changing their name (unlikely with welcome screen, but good to handle)
-            const oldUsername = oldUserData.username;
-            users[socket.id] = { username: trimmedUsername, color: userColor, lastTypingTime: 0 };
-            const adminMsg = `${oldUsername} is now known as ${trimmedUsername}.`;
-            const messageData = {
-                username: 'Admin',
-                message: adminMsg,
-                timestamp: getCurrentTimestamp(),
-                messageId: `msg-${++messageIdCounter}`,
-                type: 'admin'
-            };
-            messageHistory.push(messageData);
-            io.emit('admin_message', messageData);
-            console.log(`${oldUsername} changed name to ${trimmedUsername}`);
-            socket.emit('username_set', { username: trimmedUsername, color: userColor });
-        } else {
-            // New user joining for the first time
-            users[socket.id] = { username: trimmedUsername, color: userColor, lastTypingTime: 0 };
-            socket.emit('admin_message', {
-                username: 'Admin',
-                message: `Welcome, ${trimmedUsername}!`,
-                timestamp: getCurrentTimestamp(),
-                messageId: `msg-${++messageIdCounter}`,
-                type: 'admin'
-            });
-            socket.emit('username_set', { username: trimmedUsername, color: userColor });
-            socket.broadcast.emit('user_status', { username: trimmedUsername, status: 'joined' });
-            console.log(`${trimmedUsername} joined.`);
-        }
-
-        io.emit('user_count', Object.keys(users).length);
+        // Update online count
+        io.emit('update-online-count', connectedUsers.size);
+        
+        // Send user their assigned color
+        socket.emit('user-color-assigned', { color: userColor });
     });
 
-    // Handle incoming chat messages
-    socket.on('chat_message', (messageText, replyToMessageId = null) => {
-        const userData = users[socket.id];
-        const username = userData ? userData.username : 'Anonymous';
-        const color = userData ? userData.color : 'gray';
-
-        if (username === 'Anonymous') {
-            socket.emit('admin_message', {
-                username: 'Admin',
-                message: 'Please set your username before sending messages.',
-                timestamp: getCurrentTimestamp(),
-                messageId: `msg-${++messageIdCounter}`,
-                type: 'admin'
-            });
-            return;
-        }
-
-        const messageId = `msg-${++messageIdCounter}`;
-
-        let replyToData = null;
-        if (replyToMessageId) {
-            const originalMessage = messageHistory.find(msg => msg.messageId === replyToMessageId);
-            if (originalMessage) {
-                replyToData = {
-                    messageId: originalMessage.messageId,
-                    username: originalMessage.username,
-                    text: originalMessage.message
+    // Handle regular chat messages
+    socket.on('chat-message', (data) => {
+        const user = connectedUsers.get(socket.id);
+        if (user) {
+            // Check if it's an AI command
+            if (data.message.startsWith('/ai ')) {
+                const aiPrompt = data.message.substring(4);
+                
+                // Send typing indicator for AI
+                socket.emit('ai-typing', true);
+                
+                generateAIResponse(aiPrompt).then(aiResponse => {
+                    socket.emit('ai-typing', false);
+                    socket.emit('ai-response', {
+                        prompt: aiPrompt,
+                        response: aiResponse,
+                        timestamp: new Date()
+                    });
+                });
+            } else {
+                // Regular message to all users
+                const messageData = {
+                    message: data.message,
+                    username: user.username,
+                    color: user.color,
+                    timestamp: new Date(),
+                    messageId: Date.now() + Math.random(),
+                    replyTo: data.replyTo || null
                 };
+                
+                io.emit('chat-message', messageData);
             }
         }
+    });
 
-        const messageData = {
-            username: username,
-            message: messageText,
-            timestamp: getCurrentTimestamp(),
-            messageId: messageId,
-            replyTo: replyToData,
-            reactions: {}, // Initialize with empty reactions
-            type: 'user',
-            color: color // Pass user's color
-        };
-
-        messageHistory.push(messageData);
-        io.emit('chat_message', messageData);
-        console.log(`[${getCurrentTimestamp()}] ${username}: ${messageText}`);
-
-        // Handle AI question if message starts with /ai
-        if (messageText.toLowerCase().startsWith('/ai ')) {
-            const prompt = messageText.substring(4).trim();
-            console.log(`AI request from ${username}: ${prompt}`);
-            // Call the AI proxy endpoint internally
-            fetch(`http://localhost:${PORT}/ask-ai`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ prompt: prompt })
-            })
-            .then(res => res.json())
-            .then(aiResult => {
-                if (aiResult.response) {
-                    const aiMessageData = {
-                        username: 'Bro_Chatz AI',
-                        message: aiResult.response,
-                        timestamp: getCurrentTimestamp(),
-                        messageId: `msg-${++messageIdCounter}`,
-                        type: 'admin', // Use 'admin' type for AI responses
-                        color: 'rgb(120, 200, 255)' // A distinct color for AI
-                    };
-                    messageHistory.push(aiMessageData);
-                    io.emit('chat_message', aiMessageData); // Emit as a regular chat message with admin type
-                } else if (aiResult.error) {
-                    const errorMsgData = {
-                        username: 'Admin',
-                        message: `AI Error: ${aiResult.error}`,
-                        timestamp: getCurrentTimestamp(),
-                        messageId: `msg-${++messageIdCounter}`,
-                        type: 'admin'
-                    };
-                    messageHistory.push(errorMsgData);
-                    io.emit('chat_message', errorMsgData);
-                }
-            })
-            .catch(error => {
-                console.error('Error calling AI service from server (internal fetch):', error);
-                const errorMsgData = {
-                    username: 'Admin',
-                    message: `AI Service connection error.`,
-                    timestamp: getCurrentTimestamp(),
-                    messageId: `msg-${++messageIdCounter}`,
-                    type: 'admin'
-                };
-                messageHistory.push(errorMsgData);
-                io.emit('chat_message', errorMsgData);
+    // Handle typing indicators
+    socket.on('typing-start', () => {
+        const user = connectedUsers.get(socket.id);
+        if (user) {
+            socket.broadcast.emit('user-typing', {
+                username: user.username,
+                color: user.color,
+                isTyping: true
             });
         }
     });
 
-    // Handle typing indicator
-    socket.on('typing', () => {
-        const userData = users[socket.id];
-        if (userData && userData.username) {
-            typingUsers[userData.username] = Date.now(); // Store last typing time
-            // Send updated list of typers to everyone except the one typing
-            socket.broadcast.emit('typing_users_update', Object.keys(typingUsers));
-        }
-    });
-
-    socket.on('stop_typing', () => {
-        const userData = users[socket.id];
-        if (userData && userData.username) {
-            delete typingUsers[userData.username]; // Remove user from typers
-            socket.broadcast.emit('typing_users_update', Object.keys(typingUsers));
+    socket.on('typing-stop', () => {
+        const user = connectedUsers.get(socket.id);
+        if (user) {
+            socket.broadcast.emit('user-typing', {
+                username: user.username,
+                color: user.color,
+                isTyping: false
+            });
         }
     });
 
     // Handle message reactions
-    socket.on('react_to_message', (messageId, emoji) => {
-        const userData = users[socket.id];
-        if (!userData || !userData.username) {
-            socket.emit('admin_message', {
-                username: 'Admin',
-                message: 'Please set your username before reacting to messages.',
-                timestamp: getCurrentTimestamp(),
-                messageId: `msg-${++messageIdCounter}`,
-                type: 'admin'
-            });
-            return;
-        }
-
-        const targetMessage = messageHistory.find(msg => msg.messageId === messageId);
-        if (targetMessage) {
-            targetMessage.reactions = targetMessage.reactions || {};
-            // Increment count for the emoji
-            targetMessage.reactions[emoji] = (targetMessage.reactions[emoji] || 0) + 1;
-
-            // Broadcast the entire updated reactions object for this message
-            io.emit('message_reacted', {
-                messageId: messageId,
-                updatedReactions: targetMessage.reactions
+    socket.on('message-reaction', (data) => {
+        const user = connectedUsers.get(socket.id);
+        if (user) {
+            io.emit('message-reaction', {
+                messageId: data.messageId,
+                emoji: data.emoji,
+                username: user.username,
+                color: user.color,
+                timestamp: new Date()
             });
         }
     });
 
     // Handle user disconnection
     socket.on('disconnect', () => {
-        const userData = users[socket.id];
-        if (userData && userData.username) {
-            delete users[socket.id];
-            delete typingUsers[userData.username]; // Ensure they are removed from typers list
-            io.emit('user_count', Object.keys(users).length);
-            io.emit('user_status', { username: userData.username, status: 'left' });
-            // Update other clients about typing users (if any)
-            socket.broadcast.emit('typing_users_update', Object.keys(typingUsers));
-            console.log(`${userData.username} disconnected.`);
-        } else {
-            io.emit('user_count', Object.keys(users).length);
-            console.log(`Anonymous user disconnected: ${socket.id}`);
+        const user = connectedUsers.get(socket.id);
+        if (user) {
+            // Notify all users about user leaving
+            socket.broadcast.emit('user-notification', {
+                message: `${user.username} exited the chatz`,
+                type: 'leave',
+                username: user.username,
+                color: user.color,
+                timestamp: new Date()
+            });
+            
+            connectedUsers.delete(socket.id);
+            
+            // Update online count
+            io.emit('update-online-count', connectedUsers.size);
         }
+        console.log('User disconnected:', socket.id);
     });
 });
 
-// Start the server
+const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-    console.log(`Open your browser to http://localhost:${PORT}`);
-    console.log(`To use AI, send a message starting with '/ai ' (e.g., '/ai What is the capital of France?')`);
+    console.log(`🚀 BRO_CHATZ Server running on port ${PORT}`);
 });
