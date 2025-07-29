@@ -25,9 +25,9 @@ const socket = io();
 
 // --- Global Variables ---
 let currentUsername = '';
-let myAssignedColor = ''; // To store the color assigned by the server for 'me' messages
+// myAssignedColor is now handled by server for consistency, or generated randomly if not provided
 let typingTimer; // Used to manage the "typing..." indicator timeout
-const TYPING_DELAY = 1000; // 1 second before 'stop_typing' is emitted
+const TYPING_DELAY = 5000; // 5 seconds before 'stop_typing' is emitted (as per request)
 let longPressTimer; // Timer for detecting long presses on messages
 const LONG_PRESS_THRESHOLD = 500; // 500 milliseconds for a long press
 let lastTouchStartTime; // To help distinguish between a quick tap and a long press
@@ -290,6 +290,20 @@ async function sendMessage() {
     socket.emit('stop_typing');
 }
 
+// Function to generate a random RGB color
+function getRandomRgbColor() {
+    const r = Math.floor(Math.random() * 256);
+    const g = Math.floor(Math.random() * 256);
+    const b = Math.floor(Math.random() * 256);
+    // Ensure sufficient contrast against both light and dark backgrounds
+    // This is a simple heuristic, can be improved.
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+    if (brightness < 128) { // If too dark, lighten it
+        return `rgb(${Math.min(255, r + 50)}, ${Math.min(255, g + 50)}, ${Math.min(255, b + 50)})`;
+    }
+    return `rgb(${r}, ${g}, ${b})`;
+}
+
 // --- Message Display Function ---
 function displayMessage(username, message, timestamp, type = 'user', messageId = null, replyTo = null, reactions = {}, color = null) {
     if (!messagesContainer) return;
@@ -325,9 +339,9 @@ function displayMessage(username, message, timestamp, type = 'user', messageId =
         <span class="reaction-item">${emoji} <small>${count}</small></span>
     `).join('');
 
-    // Dynamically apply color style to username span if a color is provided
-    // This allows the RGB colors to come through from the server
-    const usernameSpanStyle = color ? `style="color: ${color};"` : '';
+    // Dynamically apply RGB color to username if not provided by server
+    const usernameColor = color || getRandomRgbColor();
+    const usernameSpanStyle = `style="color: ${usernameColor};"`;
 
     messageBubble.innerHTML = `
         ${replySnippetHtml}
@@ -377,7 +391,10 @@ function cancelReply() {
     currentReplyMessageId = null;
     if (replySnippetContainer && replySnippetText) {
         replySnippetContainer.classList.remove('active');
-        replySnippetText.textContent = '';
+        // Give time for fade-out before clearing text
+        setTimeout(() => {
+            replySnippetText.textContent = '';
+        }, 300); // Match CSS transition duration
     }
     if (messageInput) {
         messageInput.focus();
@@ -433,9 +450,9 @@ function handlePointerDown(e) {
     // Only proceed if it's a left click or a touch
     if (e.button === 0 || e.touches) {
         // Prevent default context menu on touch devices
-        if (e.touches && e.cancelable) {
-            e.preventDefault();
-        }
+        // if (e.touches && e.cancelable) {
+        //     e.preventDefault(); // This can sometimes prevent normal clicks too
+        // }
 
         lastTouchTargetMessage = targetBubble;
         if (lastTouchTargetMessage) {
@@ -519,10 +536,19 @@ function displayUserStatus(message, type = 'join') {
 
     userStatusNotifications.appendChild(statusDiv);
 
-    // Remove status message after a delay
+    // Trigger the show animation after appending
+    requestAnimationFrame(() => {
+        statusDiv.classList.add('show');
+    });
+
+
+    // Remove status message after a delay with fade-out
     setTimeout(() => {
-        statusDiv.remove();
-    }, 12000); // Remove after 12 seconds
+        statusDiv.classList.remove('show'); // Trigger fade-out
+        statusDiv.addEventListener('transitionend', () => {
+            statusDiv.remove(); // Remove from DOM after transition
+        }, { once: true });
+    }, 12000); // Remove after 12 seconds (including transition)
 }
 
 
@@ -541,7 +567,6 @@ socket.on('disconnect', () => {
 socket.on('username_set', (data) => {
     console.log('Server confirmed username set:', data.username);
     currentUsername = data.username;
-    myAssignedColor = data.color; // Store the color for 'me' messages
 
     // --- Screen Switching Logic ---
     if (welcomeScreen && chatScreen) {

@@ -33,11 +33,11 @@ body {
     background-color: #fff;
     border-radius: 8px;
     overflow: hidden; /* Ensures content doesn't spill out */
-    transition: opacity 0.3s ease, transform 0.3s ease; /* Smooth transition */
+    transition: opacity 0.4s ease-in-out, transform 0.4s ease-in-out; /* Smooth transition */
     position: absolute; /* To allow stacking on top of each other */
     top: 0;
     left: 50%;
-    transform: translateX(-50%) scale(0.95); /* Slightly scale down when inactive */
+    transform: translateX(-50%) scale(0.98); /* Slightly scale down when inactive */
     opacity: 0;
     pointer-events: none; /* Prevents interaction when hidden */
     z-index: 1; /* Default z-index */
@@ -135,11 +135,19 @@ body {
     align-items: center;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     z-index: 10;
+    position: relative; /* For positioning the theme toggle button */
 }
 
 .chat-title {
     font-size: 1.2em;
     font-weight: bold;
+    flex-grow: 1; /* Allows title to take available space */
+    text-align: center; /* Center the title */
+}
+
+.header-left-button {
+    position: absolute;
+    left: 15px;
 }
 
 /* Online Users Capsule with Blinking Effect */
@@ -160,12 +168,21 @@ body {
     animation: pulse 2s infinite ease-in-out; /* Add this line for blinking */
 }
 
-/* User Status Notifications (Join/Leave) */
+/* User Status Notifications (Join/Leave) - Pop-up/Fade-out */
 #user-status-notifications {
     padding: 10px;
     text-align: center;
     font-size: 0.8em;
     color: #666;
+    position: absolute; /* Position over the chat */
+    top: 60px; /* Below the header */
+    width: 100%;
+    left: 0;
+    z-index: 9; /* Below the header, above messages */
+    pointer-events: none; /* Allow clicks to pass through */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 .user-status-message {
@@ -173,8 +190,17 @@ body {
     padding: 5px 10px;
     border-radius: 15px;
     display: inline-block;
+    opacity: 0; /* Start hidden for fade-in */
+    transform: translateY(-10px) scale(0.9); /* Start slightly up and smaller for burst effect */
+    transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+    pointer-events: auto; /* Re-enable pointer events for the message itself */
+    max-width: 80%; /* Limit width */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.user-status-message.show {
     opacity: 1;
-    transition: opacity 1s ease-out;
+    transform: translateY(0) scale(1);
 }
 
 .user-status-message.join {
@@ -351,10 +377,15 @@ body {
     align-items: center;
     font-size: 0.9em;
     display: none; /* Hidden by default, shown when active */
+    opacity: 0; /* Start hidden for fade */
+    transform: translateY(10px); /* Start slightly down for burst */
+    transition: opacity 0.3s ease-out, transform 0.3s ease-out;
 }
 
 #reply-snippet-container.active {
-    display: flex;
+    display: flex; /* Override display: none */
+    opacity: 1;
+    transform: translateY(0);
 }
 
 #reply-snippet-text {
@@ -451,13 +482,15 @@ body {
     flex-direction: column;
     min-width: 150px;
     opacity: 0; /* Control visibility with opacity and pointer-events */
+    transform: scale(0.9); /* Start slightly smaller for burst effect */
     pointer-events: none;
-    transition: opacity 0.2s ease;
+    transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
 .action-popup.active {
     display: flex;
     opacity: 1;
+    transform: scale(1);
     pointer-events: auto;
 }
 
@@ -561,9 +594,14 @@ body.dark-theme .message-bubble.admin {
     color: #e0f2f7;
 }
 
+/* Ensure dynamic RGB colors are not overridden in dark theme */
 body.dark-theme .message-bubble.me .username {
-    color: #90cea9;
+    /* No color here, rely on inline style or default for 'me' */
 }
+body.dark-theme .message-bubble.admin .username {
+    color: #0288d1;
+}
+
 
 body.dark-theme .message-bubble .timestamp {
     color: #a0aec0;
