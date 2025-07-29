@@ -383,7 +383,8 @@ body {
     font-size: 0.9rem;
     opacity: 0;
     transform: translateY(-20px);
-    animation: slide-fade-in 0.5s ease-out forwards, slide-fade-out 0.5s ease-out 3s forwards; /* In and out animation */
+    /* Changed animation delay for fade-out to 6s, for a total of 6.5s visibility */
+    animation: slide-fade-in 0.5s ease-out forwards, slide-fade-out 0.5s ease-out 6s forwards;
     box-shadow: 0 2px 8px rgba(0, 255, 255, 0.4);
 }
 

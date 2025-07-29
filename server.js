@@ -24,8 +24,9 @@ const PORT = process.env.PORT || 3000; // Define the port, use environment varia
 // This is the secure way to handle API keys.
 // For local testing, you will set this in your terminal (e.g., export GEMINI_API_KEY=YOUR_KEY).
 // For Render deployment, you will set this in Render's environment variable settings.
-const GEMINI_API_KEY = 'AIzaSyBm2vvQdkrxplgoa0ri_aSBkfJWCc-rt-0'
-;
+// IMPORTANT: Replace 'AIzaSyBm2vvQdkrxplgo0ri_aSBkfJWCc-rt-0' with a secure environment variable.
+// This key is currently hardcoded for demonstration but should be sourced from process.env.
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyBm2vvQdkrxplgo0ri_aSBkfJWCc-rt-0'; // USE process.env.GEMINI_API_KEY for production
 
 // --- Console log to check if API key is loaded ---
 console.log('Server starting. GEMINI_API_KEY:', GEMINI_API_KEY ? '******' + GEMINI_API_KEY.substring(GEMINI_API_KEY.length - 4) : 'NOT SET');
@@ -156,6 +157,14 @@ io.on('connection', (socket) => {
     socket.on('react message', ({ messageId, emoji, reactorName }) => {
         console.log(`${reactorName} reacted with ${emoji} to message ID ${messageId}`);
         io.emit('message reacted', { messageId, emoji, reactorName });
+    });
+
+    // NEW: Handle incoming 'send_reply_notification' from clients
+    // and broadcast it to all clients as 'receive_reply_notification'.
+    // The client-side (script.js) will filter to show it only to the intended recipient.
+    socket.on('send_reply_notification', (data) => {
+        console.log(`Server received reply notification: ${data.replierUsername} replied to ${data.repliedToUsername}`);
+        io.emit('receive_reply_notification', data); // Broadcast to all connected clients
     });
 
     socket.on('disconnect', () => {

@@ -30,6 +30,7 @@ let currentMessageForAction = null; // Stores the message element being acted up
 let messageIdCounter = 0; // Simple counter for unique message IDs
 let isAILoading = false; // Flag to prevent multiple AI requests
 let replyingToMessage = null; // Stores data of the message being replied to {id, username, text}
+let isTyping = false; // Flag to track typing state for the local user
 
 // Available emojis for reactions
 const emojis = ['👍', '❤️', '😂', '😮', '😢', '🔥'];
@@ -65,7 +66,9 @@ function displayUserStatus(msg) {
 
     // Remove the notification after its animation finishes
     notificationDiv.addEventListener('animationend', () => {
-        notificationDiv.remove();
+        // Ensure the element is only removed once all animations are done (especially the 'forwards' ones)
+        // A small delay ensures the transition completes visually before removal
+        setTimeout(() => notificationDiv.remove(), 100);
     });
 }
 
@@ -110,8 +113,8 @@ function addMessage(data, isSelf = false) {
         const replyText = document.createElement('span');
         // Truncate long messages for snippet
         const snippetText = data.replyTo.text.length > 50 ?
-                            data.replyTo.text.substring(0, 47) + '...' :
-                            data.replyTo.text;
+                                data.replyTo.text.substring(0, 47) + '...' :
+                                data.replyTo.text;
         replyText.textContent = `"${snippetText}"`;
 
         replySnippet.appendChild(replyUsername);
@@ -398,12 +401,22 @@ sendButton.addEventListener('click', () => {
                 message: message,
                 replyTo: replyingToMessage // Pass the replyTo object
             });
+
+            // NEW: Emit notification if this message is a reply to someone else
+            if (replyingToMessage && replyingToMessage.username !== username) {
+                socket.emit('send_reply_notification', {
+                    repliedToUsername: replyingToMessage.username,
+                    replierUsername: username
+                });
+            }
+
             replyingToMessage = null; // Clear reply state after sending
         }
         messageInput.value = ''; // Clear input field
         clearTimeout(typingTimeout); // Clear any pending typing timeout
         socket.emit('stop typing'); // Immediately send stop typing
         typingIndicator.classList.remove('active'); // Hide indicator
+        isTyping = false; // Reset typing flag after sending message
     }
 });
 
@@ -416,15 +429,18 @@ messageInput.addEventListener('keydown', (e) => {
 
 // Typing indicator logic
 messageInput.addEventListener('input', () => {
-    // If there's no timeout set, or it has already fired, emit 'typing'
-    if (!typingTimeout) {
+    // If user wasn't typing before, emit 'typing' event to server
+    if (!isTyping) {
         socket.emit('typing');
+        isTyping = true; // Set flag to true
     }
-    // Clear the existing timeout and set a new one
+
+    // Clear the existing 'stop typing' timeout and set a new one
     clearTimeout(typingTimeout);
     typingTimeout = setTimeout(() => {
         socket.emit('stop typing');
-        typingIndicator.classList.remove('active');
+        isTyping = false; // Reset flag after timeout
+        typingIndicator.classList.remove('active'); // Hide indicator
     }, TYPING_DELAY);
 });
 
@@ -465,8 +481,9 @@ replyButton.addEventListener('click', () => {
             text: originalText
         };
 
-        // Optionally, pre-fill the input with a visual indicator of the reply
-        messageInput.value = `@${originalUsername}: "${originalText.substring(0, 30)}${originalText.length > 30 ? '...' : ''}" `;
+        // NEW: Do NOT pre-fill the input with the message snippet
+        messageInput.value = ''; // Ensure it's empty
+
         messageInput.focus();
         hideActionPopup();
     }
@@ -532,6 +549,14 @@ socket.on('user typing', (typingUsernames) => {
 socket.on('message reacted', ({ messageId, emoji, reactorName }) => {
     addReactionToMessage(messageId, emoji, reactorName);
 });
+
+// NEW: Handle incoming reply notifications
+socket.on('receive_reply_notification', ({ repliedToUsername, replierUsername }) => {
+    if (repliedToUsername === username) { // Only show notification if this client is the one who was replied to
+        displayUserStatus(`${replierUsername} replied to you!`);
+    }
+});
+
 
 // --- Initial Setup ---
 // Ensure the welcome screen is active on page load
