@@ -16,17 +16,25 @@ const io = socketIo(server, {
 
 const PORT = process.env.PORT || 3000;
 
+// --- ADD THIS BLOCK FOR CACHE CONTROL (Crucial for development) ---
+// This middleware explicitly tells browsers and proxies not to cache static assets.
+app.use((req, res, next) => {
+    // Only apply these headers to your static files (HTML, CSS, JS)
+    // You can adjust this regex if you have other static assets that should be cached
+    if (req.path.match(/\.(html|js|css)$/)) {
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+    }
+    next();
+});
+// --- END ADDED BLOCK ---
+
 // Serve static files from the 'public' directory
 app.use(express.static(path.join(__dirname, 'public')));
 
-// --- Server-Side Data Stores ---
-let users = {}; // Stores { socket.id: { username: 'user', color: 'rgb(x,y,z)', lastTypingTime: 0 } }
-let messageHistory = []; // Stores { username, message, timestamp, messageId, replyTo, reactions, type }
-let messageIdCounter = 0; // Unique ID counter for messages
-let typingUsers = {}; // Stores { username: lastTypingTime } for current typers
-
 // --- Configuration for AI (Gemini) ---
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'YOUR_GEMINI_API_KEY_HERE'; // *** IMPORTANT: Set this via environment variable! ***
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyC0vAo8oWOb22IGUy2J5TrzrKFxobpMj5g'; // *** IMPORTANT: Set this via environment variable! ***
 
 console.log('Server starting. GEMINI_API_KEY:', GEMINI_API_KEY && GEMINI_API_KEY !== 'YOUR_GEMINI_API_KEY_HERE' ? '******' + GEMINI_API_KEY.substring(GEMINI_API_KEY.length - 4) : 'NOT SET or DEFAULT');
 
@@ -37,6 +45,12 @@ if (!GEMINI_API_KEY || GEMINI_API_KEY === 'YOUR_GEMINI_API_KEY_HERE') {
 
 // Middleware to parse JSON bodies from incoming requests (for AI endpoint)
 app.use(express.json());
+
+// In-memory data stores (reset on server restart)
+const users = {}; // Store { socket.id: { username: "...", color: "..." } }
+const messageHistory = []; // Store message objects
+let messageIdCounter = 0; // Simple counter for unique message IDs
+const typingUsers = {}; // Store { username: timestamp }
 
 // Function to generate a random RGB color.
 function getRandomColor() {
@@ -149,7 +163,6 @@ io.on('connection', (socket) => {
             messageHistory.push(messageData);
             io.emit('admin_message', messageData);
             console.log(`${oldUsername} changed name to ${trimmedUsername}`);
-            // --- ADDED/UPDATED THIS LINE ---
             socket.emit('username_set', { username: trimmedUsername, color: userColor });
         } else {
             // New user joining for the first time
@@ -161,7 +174,6 @@ io.on('connection', (socket) => {
                 messageId: `msg-${++messageIdCounter}`,
                 type: 'admin'
             });
-            // --- ADDED/UPDATED THIS LINE ---
             socket.emit('username_set', { username: trimmedUsername, color: userColor });
             socket.broadcast.emit('user_status', { username: trimmedUsername, status: 'joined' });
             console.log(`${trimmedUsername} joined.`);

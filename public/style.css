@@ -1,808 +1,665 @@
-/* General Styling */
+/* General Body and App Layout */
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f0f2f5; /* Light background */
     display: flex;
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    /* --- DEFAULT RGB THEME BACKGROUND --- */
-    background: linear-gradient(135deg,
-        rgb(255, 0, 0),    /* Red */
-        rgb(255, 127, 0),  /* Orange */
-        rgb(255, 255, 0),  /* Yellow */
-        rgb(0, 255, 0),    /* Green */
-        rgb(0, 0, 255),    /* Blue */
-        rgb(75, 0, 130),   /* Indigo */
-        rgb(148, 0, 211)   /* Violet */
-    );
-    background-size: 400% 400%; /* Make background larger for animation */
-    animation: gradient-animation 20s ease infinite alternate; /* Animates the gradient */
-    color: #f0f0f0; /* Light text for contrast on the colorful background */
-    overflow: hidden; /* Hide scrollbars that might appear due to popups initially */
-    transition: background-color 0.5s ease; /* Smooth transition for theme change */
+    color: #333;
+    transition: background-color 0.3s ease, color 0.3s ease;
+    overflow: hidden; /* Prevent body scroll */
 }
 
-/* Original RGB Gradient Animation */
-@keyframes gradient-animation {
-    0% {
-        background-position: 0% 50%;
-    }
-    100% {
-        background-position: 100% 50%;
-    }
+#app {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100vh; /* Full viewport height for centering */
 }
 
-/* --- DARK THEME STYLES --- */
-body.dark-theme {
-    background: linear-gradient(135deg, #0d1a2a, #0a1a1a); /* Dark gradient background */
-    color: #f0f0f0;
+.screen {
+    width: 100%;
+    max-width: 420px; /* Max width for chat container on larger screens */
+    height: 100vh; /* Full height for mobile experience */
+    display: none; /* Hidden by default, activated by JS */
+    flex-direction: column; /* For vertical stacking of content */
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    background-color: #fff;
+    border-radius: 8px;
+    overflow: hidden; /* Hide scrollbars that might be outside chat-container */
 }
 
-body.dark-theme #welcome-screen,
-body.dark-theme #chat-screen {
-    background-color: rgba(0, 0, 0, 0.7);
-    box-shadow: 0 0 30px rgba(0, 255, 255, 0.5); /* Cyan glow */
+.screen.active {
+    display: flex; /* Show the active screen */
 }
 
-body.dark-theme #welcome-screen h1 {
-    color: #00ffff; /* Cyan color for heading */
-    text-shadow: 0 0 10px rgba(0, 255, 255, 0.7);
-}
-
-body.dark-theme .welcome-text { /* Ensure welcome screen text is visible in dark theme */
-    color: #eee;
-}
-
-body.dark-theme .welcome-text.bro-chatz-title { /* Specific for the title */
-    color: #00ffff;
-    text-shadow: 0 0 10px rgba(0, 255, 255, 0.7);
-}
-
-
-body.dark-theme #username-input,
-body.dark-theme #message-input {
-    border: 2px solid #00ffff;
-    background-color: #0d1a2a;
-    color: #f0f0f0;
-}
-
-body.dark-theme #username-input::placeholder,
-body.dark-theme #message-input::placeholder {
-    color: #aaa;
-}
-
-body.dark-theme #username-input:focus,
-body.dark-theme #message-input:focus {
-    border-color: #00aaff;
-    box-shadow: 0 0 15px rgba(0, 170, 255, 0.7);
-}
-
-body.dark-theme #start-chat-btn,
-body.dark-theme #send-button,
-body.dark-theme #reply-button,
-body.dark-theme #cancel-reply-btn { /* Added cancel-reply-btn */
-    background-color: #00ffff;
-    color: #0d1a2a;
-    box-shadow: 0 5px 15px rgba(0, 255, 255, 0.4);
-}
-
-body.dark-theme #start-chat-btn:hover,
-body.dark-theme #send-button:hover,
-body.dark-theme #reply-button:hover,
-body.dark-theme #cancel-reply-btn:hover { /* Added cancel-reply-btn */
-    background-color: #00aaff;
-    box-shadow: 0 8px 20px rgba(0, 170, 255, 0.6);
-}
-
-body.dark-theme .chat-header,
-body.dark-theme .message-input-area {
-    background-color: rgba(13, 26, 42, 0.8);
-    border-color: #00ffff;
-    color: #00ffff; /* Ensure chat title is cyan */
-}
-body.dark-theme .chat-header .chat-title {
-    color: #00ffff; /* Explicitly set chat title color */
-}
-
-body.dark-theme .online-users-capsule { /* Adjusted for the new capsule class */
-    color: #00ffff; /* Cyan for online users count */
-}
-body.dark-theme .online-users-capsule .blinking-dot { /* Blinking dot color */
-    background-color: #00ff00;
-}
-
-
-body.dark-theme #messages {
-    background-color: rgba(0, 0, 0, 0.5);
-}
-
-body.dark-theme #messages::-webkit-scrollbar-track {
-    background: #0d1a2a;
-}
-
-body.dark-theme #messages::-webkit-scrollbar-thumb {
-    background: #00ffff;
-}
-
-body.dark-theme #messages::-webkit-scrollbar-thumb:hover {
-    background: #00aaff;
-}
-
-body.dark-theme .message-bubble {
-    background-color: rgba(255, 255, 255, 0.1);
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
-    color: #f0f0f0; /* Ensure message text is light */
-}
-body.dark-theme .message-bubble .username {
-    color: #00ffff; /* Ensure username is cyan */
-}
-
-body.dark-theme .message-bubble.admin {
-    background-color: rgba(255, 255, 0, 0.1);
-    border: 1px solid rgba(255, 255, 0, 0.5);
-    color: #ffff00; /* Ensure admin text is yellow */
-}
-
-body.dark-theme .message-bubble.highlight {
-    animation: dark-highlight-message 1.5s ease-in-out; /* Dark theme specific highlight */
-}
-
-@keyframes dark-highlight-message {
-    0% {
-        box-shadow: 0 0 15px 5px rgba(0, 255, 255, 0.7); /* Bright cyan glow */
-        transform: scale(1.02);
-    }
-    50% {
-        box-shadow: 0 0 20px 8px rgba(0, 255, 255, 0.5);
-        transform: scale(1.03);
-    }
-    100% {
-        box-shadow: none;
-        transform: scale(1);
-    }
-}
-
-body.dark-theme .reply-snippet {
-    background-color: rgba(255, 255, 255, 0.08);
-    border-left: 3px solid #00ffff;
-    color: #bbb;
-}
-
-body.dark-theme .reply-snippet .reply-username {
-    color: #00ffff;
-}
-
-/* Dark theme for the new reply snippet container */
-body.dark-theme .reply-snippet-container {
-    background-color: rgba(13, 26, 42, 0.8);
-    border-top: 1px solid #00ffff;
-    color: #00ffff;
-}
-body.dark-theme .reply-snippet-container .reply-snippet-text {
-    color: #00ffff;
-}
-body.dark-theme .reply-snippet-container .reply-username {
-    color: #00ffff;
-}
-body.dark-theme .cancel-reply-btn {
-    color: #00ffff;
-}
-body.dark-theme .cancel-reply-btn:hover {
-    color: #ff0000; /* Red on hover for cancel */
-}
-
-
-body.dark-theme #typing-indicator {
-    color: #aaa;
-}
-
-body.dark-theme #action-popup {
-    background-color: rgba(0, 0, 0, 0.85);
-    border: 1px solid #00ffff;
-    box-shadow: 0 5px 20px rgba(0, 255, 255, 0.7);
-}
-
-body.dark-theme .emoji-option {
-    background-color: rgba(255, 255, 255, 0.05);
-}
-
-body.dark-theme .emoji-option:hover {
-    background-color: rgba(255, 255, 255, 0.2);
-}
-
-body.dark-theme .reaction-item {
-    background-color: rgba(255, 255, 255, 0.15);
-    color: #eee;
-}
-
-body.dark-theme .reaction-item small {
-    color: #bbb;
-}
-
-body.dark-theme .message-bubble.long-press-active {
-    box-shadow: 0 0 15px rgba(0, 255, 255, 0.7);
-}
-
-body.dark-theme .user-status-message {
-    background-color: rgba(0, 255, 255, 0.8);
-    color: #0d1a2a;
-    box-shadow: 0 5px 15px rgba(0, 255, 255, 0.5);
-}
-
-/* --- Welcome Screen --- */
+/* Welcome Screen Specifics */
 #welcome-screen {
-    background-color: rgba(255, 255, 255, 0.95); /* Adjusted for default theme */
-    padding: 40px;
-    border-radius: 15px;
-    box-shadow: 0 0 25px rgba(0, 0, 0, 0.15);
+    justify-content: center;
+    align-items: center;
     text-align: center;
-    max-width: 400px;
-    width: 90%;
-    /* FIX FOR KEYBOARD/ALIGNMENT */
-    opacity: 0;
-    visibility: hidden; /* Use visibility instead of display: none */
-    position: absolute; /* Add absolute positioning */
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%) translateY(20px); /* Combine initial transform and slight offset */
-    transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out, visibility 0.5s; /* Add visibility to transition */
+    padding: 20px;
 }
 
-#welcome-screen.active {
-    opacity: 1;
-    visibility: visible; /* Make visible */
-    transform: translate(-50%, -50%) translateY(0); /* Final centered position */
+.welcome-card {
+    background-color: #fff;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+.welcome-logo {
+    width: 100px;
+    height: 100px;
+    object-fit: contain;
+    margin-bottom: 10px;
 }
 
 #welcome-screen h1 {
-    color: #333; /* Dark text for default theme */
-    margin-bottom: 25px;
-    font-size: 2.2em;
-    text-shadow: none;
+    color: #4CAF50; /* A fresh green for your brand */
+    margin-bottom: 15px;
+    font-size: 1.8em;
 }
-/* Ensure the specific welcome texts are visible in light theme */
-.welcome-text {
-    color: #333;
-}
-.welcome-text.bro-chatz-title {
-    color: #66ccff; /* Default title color */
-    text-shadow: 0 0 10px rgba(102, 204, 255, 0.7);
-}
-
 
 #username-input {
-    width: calc(100% - 20px);
-    padding: 12px;
+    width: calc(100% - 40px);
+    padding: 12px 20px;
     margin-bottom: 20px;
-    border: 2px solid #ccc; /* Softer border for default */
-    border-radius: 8px;
-    background-color: #fff; /* White background for default */
-    color: #333; /* Dark text for default */
-    font-size: 1.1em;
+    border: 1px solid #ddd;
+    border-radius: 25px;
+    font-size: 1em;
     outline: none;
     transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
-#username-input::placeholder {
-    color: #888;
-}
-
 #username-input:focus {
-    border-color: #66ccff; /* Default focus color */
-    box-shadow: 0 0 10px rgba(102, 204, 255, 0.5);
+    border-color: #4CAF50;
+    box-shadow: 0 0 8px rgba(76, 175, 80, 0.3);
 }
 
 #username-input.shake {
-    animation: shake 0.3s;
+    animation: shake 0.5s;
+    border-color: #f44336;
 }
 
 @keyframes shake {
     0%, 100% { transform: translateX(0); }
-    20%, 60% { transform: translateX(-5px); }
-    40%, 80% { transform: translateX(5px); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+    20%, 40%, 60%, 80% { transform: translateX(5px); }
 }
 
-#start-chat-btn {
-    background-color: #66ccff; /* Default button color */
-    color: #fff;
-    padding: 14px 30px;
-    border: none;
-    border-radius: 8px;
-    font-size: 1.2em;
-    font-weight: bold;
-    cursor: pointer;
-    transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
-    box-shadow: 0 5px 15px rgba(102, 204, 255, 0.4);
-}
-
-#start-chat-btn:hover {
-    background-color: #33aaff;
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(51, 170, 255, 0.6);
-}
-
-/* --- Chat Screen --- */
+/* Chat Screen Layout */
 #chat-screen {
-    background-color: rgba(255, 255, 255, 0.95); /* Default theme background */
-    border-radius: 15px;
-    box-shadow: 0 0 25px rgba(0, 0, 0, 0.15);
-    width: 95%;
-    max-width: 800px;
-    height: 90vh;
-    display: flex; /* Ensure it's flex by default, but hidden by opacity/transform */
+    display: flex; /* Ensure flex for chat container */
     flex-direction: column;
-    overflow: hidden; /* For inner scrolling */
-    transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
-    opacity: 0; /* Start hidden */
-    transform: translateY(20px); /* Start slightly below */
-    pointer-events: none; /* Prevent interaction when hidden */
+    justify-content: space-between;
 }
 
-#chat-screen.active {
-    opacity: 1;
-    transform: translateY(0);
-    pointer-events: auto; /* Re-enable pointer events when active */
+.chat-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%; /* Take full height of the screen */
+    background-color: #fff;
 }
 
-/* --- Chat Header --- */
 .chat-header {
-    background-color: #f8f8f8; /* Default header background */
+    background-color: #4CAF50;
+    color: white;
     padding: 15px 20px;
-    border-bottom: 1px solid #eee; /* Default border */
-    border-radius: 15px 15px 0 0;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    color: #555; /* Default header text color */
-    font-size: 1.1em;
-    text-shadow: none;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    z-index: 10;
 }
 
-/* --- Theme Toggle Button --- */
-#theme-toggle-btn {
-    background: none;
-    border: none;
-    font-size: 1.5em;
-    cursor: pointer;
-    color: #666; /* Default color */
-    transition: color 0.3s ease;
-    z-index: 100;
-    margin-right: auto; /* Pushes the chat title to the center-right */
-    padding: 5px; /* Add some padding for touch target */
-}
-
-#theme-toggle-btn:hover {
-    color: #333;
-}
-
-body.dark-theme #theme-toggle-btn {
-    color: #00ffff; /* Cyan color in dark theme */
-}
-
-body.dark-theme #theme-toggle-btn:hover {
-    color: #00aaff;
-}
-
-/* --- Online Users Capsule (Updated class name) --- */
-.online-users-capsule {
-    display: flex;
-    align-items: center;
-    background-color: rgba(0, 0, 0, 0.05); /* Subtle background for capsule */
-    border-radius: 20px;
-    padding: 5px 12px;
-    font-size: 0.9em;
+.chat-title {
+    font-size: 1.2em;
     font-weight: bold;
-    color: #555; /* Default text color */
 }
 
-.online-users-capsule .blinking-dot {
-    width: 10px;
-    height: 10px;
-    background-color: #00ff00; /* Green for online */
-    border-radius: 50%;
-    margin-left: 8px;
-    animation: blink 1.5s infinite;
+.online-users {
+    font-size: 0.9em;
+    background-color: rgba(255, 255, 255, 0.2);
+    padding: 5px 10px;
+    border-radius: 20px;
+    display: flex; /* Makes the capsule look */
+    align-items: center;
+    gap: 5px;
 }
-@keyframes blink {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.3; }
+
+/* User Status Notifications (Join/Leave) */
+#user-status-notifications {
+    padding: 10px;
+    text-align: center;
+    font-size: 0.8em;
+    color: #666;
+}
+
+.user-status-message {
+    margin-bottom: 5px;
+    padding: 5px 10px;
+    border-radius: 15px;
+    display: inline-block; /* To make it a capsule */
+    opacity: 1;
+    transition: opacity 1s ease-out;
+}
+
+.user-status-message.join {
+    background-color: #e6ffe6;
+    color: #388e3c;
+}
+
+.user-status-message.leave {
+    background-color: #ffe6e6;
+    color: #d32f2f;
 }
 
 
-/* --- Messages Container --- */
-#messages {
-    flex-grow: 1; /* Takes up available space */
-    padding: 20px;
-    overflow-y: auto; /* Enable scrolling for messages */
+/* Messages Container */
+.messages-container {
+    flex-grow: 1;
+    padding: 10px 15px;
+    overflow-y: auto;
+    background-color: #f8f9fa; /* Lighter background for messages */
     scroll-behavior: smooth;
-    background-color: rgba(255, 255, 255, 0.7); /* Default background */
+    -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+}
+
+/* Individual Message Bubbles */
+.message-bubble {
     display: flex;
     flex-direction: column;
-}
-
-#messages::-webkit-scrollbar {
-    width: 8px;
-}
-
-#messages::-webkit-scrollbar-track {
-    background: #f0f0f0; /* Default scrollbar track */
-    border-radius: 10px;
-}
-
-#messages::-webkit-scrollbar-thumb {
-    background: #bbb; /* Default scrollbar thumb */
-    border-radius: 10px;
-}
-
-#messages::-webkit-scrollbar-thumb:hover {
-    background: #999;
-}
-
-/* --- Message Bubble --- */
-.message-bubble {
-    background-color: #fff; /* Default bubble background */
-    padding: 10px 15px;
-    border-radius: 15px;
     margin-bottom: 10px;
-    max-width: 70%;
-    align-self: flex-start; /* Default alignment */
-    position: relative; /* For reactions */
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* Default shadow */
+    max-width: 80%; /* Limit message width */
+    position: relative;
+    border-radius: 12px;
+    padding: 8px 12px;
+    font-size: 0.95em;
+    line-height: 1.4;
     word-wrap: break-word; /* Ensure long words break */
-    transition: background-color 0.2s ease, transform 0.1s ease; /* For long press visual feedback */
-    border: 1px solid #eee; /* Default border */
-    color: #333; /* Default message text color */
-}
-
-/* My messages */
-.message-bubble.me {
-    background-color: #e0f2f7; /* Light blue for my messages */
-    align-self: flex-end; /* Align to the right */
-    border-bottom-right-radius: 5px; /* Adjust border radius for "my" messages */
-    border: 1px solid #d0e7ed;
-    color: #222;
-}
-
-/* Other users' messages */
-.message-bubble.other {
-    background-color: #ffffff; /* White for other messages */
-    align-self: flex-start; /* Align to the left */
-    border-bottom-left-radius: 5px; /* Adjust border radius for "other" messages */
-    border: 1px solid #eee;
-    color: #333;
-}
-
-
-.message-bubble.admin {
-    background-color: #fffacd; /* Default admin message color */
-    border: 1px solid #eebb00;
-    align-self: center; /* Center admin messages */
-    text-align: center;
-    max-width: 90%; /* Admin messages can be wider */
-    color: #665500; /* Darker text for admin messages */
-}
-
-/* Highlight animation for reply snippet click (Updated to match default theme) */
-.message-bubble.highlight {
-    animation: highlight-message 1.5s ease-in-out;
-}
-
-@keyframes highlight-message {
-    0% {
-        box-shadow: 0 0 15px 5px rgba(102, 204, 255, 0.7); /* Softer blue glow */
-        transform: scale(1.02);
-    }
-    50% {
-        box-shadow: 0 0 20px 8px rgba(102, 204, 255, 0.5);
-        transform: scale(1.03);
-    }
-    100% {
-        box-shadow: none;
-        transform: scale(1);
-    }
-}
-
-
-.message-bubble .username {
-    font-weight: bold;
-    margin-bottom: 5px;
-    display: block;
-    word-wrap: break-word;
-    color: #6699ff; /* Default username color */
-}
-
-.message-bubble .message-text {
-    display: block;
-    word-wrap: break-word;
-}
-
-/* Reply Snippet Styling (for when a message is replied to) */
-.reply-snippet {
-    background-color: rgba(0, 0, 0, 0.03); /* Default subtle background */
-    border-left: 3px solid #99ccff; /* Default lighter blue border */
-    padding: 5px 10px;
-    margin-bottom: 8px;
-    border-radius: 5px;
-    font-size: 0.85em;
-    color: #666; /* Default darker text */
-    cursor: pointer;
     transition: background-color 0.2s ease;
 }
 
+.message-bubble.me {
+    align-self: flex-end; /* Align my messages to the right */
+    background-color: #dcf8c6; /* Light green for my messages */
+    color: #333;
+    border-bottom-right-radius: 2px; /* For a 'tail' effect */
+}
+
+.message-bubble.other {
+    align-self: flex-start; /* Align other messages to the left */
+    background-color: #ffffff; /* White for others' messages */
+    color: #333;
+    border: 1px solid #e0e0e0;
+    border-bottom-left-radius: 2px; /* For a 'tail' effect */
+}
+
+.message-bubble.admin {
+    align-self: center; /* Center admin messages */
+    background-color: #e0f2f7; /* Light blue for admin messages */
+    color: #0288d1;
+    font-size: 0.85em;
+    text-align: center;
+    padding: 5px 10px;
+    max-width: 90%;
+    margin: 5px auto;
+}
+
+.message-bubble.highlight {
+    background-color: #ffeb3b !important; /* Yellow for highlight */
+    box-shadow: 0 0 10px rgba(255, 235, 59, 0.7);
+    animation: highlightFade 1.5s forwards;
+}
+
+@keyframes highlightFade {
+    0% { background-color: #ffeb3b; box-shadow: 0 0 10px rgba(255, 235, 59, 0.7); }
+    100% { background-color: initial; box-shadow: none; }
+}
+
+.message-bubble .username {
+    font-weight: bold;
+    margin-bottom: 4px;
+    font-size: 0.85em;
+    color: #4CAF50; /* Default user color */
+}
+
+.message-bubble.me .username {
+    color: #2e7d32; /* Darker green for my username */
+}
+
+.message-bubble .message-text {
+    word-break: break-word; /* Break long words */
+}
+
+.message-bubble .timestamp {
+    font-size: 0.7em;
+    color: #999;
+    align-self: flex-end;
+    margin-top: 5px;
+}
+
+/* Reply Snippet within messages */
+.reply-snippet {
+    background-color: rgba(0, 0, 0, 0.05);
+    border-left: 3px solid #4CAF50;
+    padding: 5px 8px;
+    margin-bottom: 5px;
+    border-radius: 4px;
+    font-size: 0.8em;
+    cursor: pointer;
+    opacity: 0.8;
+    transition: opacity 0.2s ease, background-color 0.2s ease;
+}
+
 .reply-snippet:hover {
+    opacity: 1;
     background-color: rgba(0, 0, 0, 0.08);
 }
 
 .reply-snippet .reply-username {
     font-weight: bold;
-    color: #6699ff; /* Default lighter blue for replied username */
+    color: #4CAF50;
+    display: block;
+    margin-bottom: 2px;
 }
 
-/* --- Typing Indicator --- */
+.reply-snippet .reply-text {
+    color: #555;
+    white-space: nowrap; /* Keep text on single line */
+    overflow: hidden; /* Hide overflow */
+    text-overflow: ellipsis; /* Add ellipsis */
+    display: block;
+}
+
+/* Message Reactions */
+.message-reactions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 5px;
+    justify-content: flex-end; /* Align reactions to the right */
+    font-size: 0.8em;
+}
+
+.message-bubble.other .message-reactions {
+    justify-content: flex-start; /* Align reactions to the left for others */
+}
+
+.reaction-item {
+    background-color: rgba(0, 0, 0, 0.05);
+    border-radius: 12px;
+    padding: 2px 7px;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 0.9em;
+}
+
+.reaction-item small {
+    font-size: 0.7em;
+    color: #777;
+}
+
+
+/* Typing Indicator */
 #typing-indicator {
-    padding: 5px 20px;
-    color: #666; /* Default text for typing indicator */
-    font-style: italic;
-    min-height: 20px; /* Reserve space */
-    transition: opacity 0.3s ease-in-out;
+    padding: 5px 15px;
+    font-size: 0.8em;
+    color: #666;
+    height: 20px; /* Reserve space */
     opacity: 0;
-    text-align: left; /* Align to left like messages */
+    transition: opacity 0.3s ease-in-out;
 }
 
 #typing-indicator.active {
     opacity: 1;
 }
 
-/* --- Reply Snippet Container (above message input) --- */
+/* Reply Snippet Container (Above Message Input) */
 #reply-snippet-container {
+    background-color: #f0f0f0;
+    padding: 8px 15px;
+    border-top: 1px solid #ddd;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background-color: rgba(255, 255, 255, 0.9); /* Default subtle background */
-    padding: 10px 20px;
-    border-top: 1px solid #eee;
-    border-bottom: 1px solid #eee;
-    font-size: 0.95em;
-    color: #555;
-    /* Hidden by default, activated by JS */
-    opacity: 0;
-    height: 0; /* Initially collapse height */
-    overflow: hidden; /* Hide overflow content */
-    transition: opacity 0.3s ease, height 0.3s ease;
+    font-size: 0.9em;
+    display: none; /* Hidden by default, shown when active */
 }
 
 #reply-snippet-container.active {
-    opacity: 1;
-    height: auto; /* Expand height when active */
-    padding: 10px 20px; /* Re-apply padding when active */
-}
-
-#reply-snippet-container .reply-snippet-text {
-    flex-grow: 1;
-    margin-right: 10px;
-    color: #6699ff; /* Highlight replied text/username */
-}
-
-#cancel-reply-btn {
-    background: none;
-    border: none;
-    color: #888; /* Default color for cancel icon */
-    font-size: 1.2em;
-    cursor: pointer;
-    padding: 5px;
-    transition: color 0.2s ease, transform 0.2s ease;
-}
-
-#cancel-reply-btn:hover {
-    color: #ff0000; /* Red on hover */
-    transform: scale(1.1);
-}
-
-
-/* --- Message Input Area --- */
-.message-input-area {
-    background-color: #f8f8f8; /* Default input area background */
-    padding: 15px 20px;
-    border-top: 1px solid #eee; /* Default border */
-    border-radius: 0 0 15px 15px;
     display: flex;
-    align-items: center;
+}
+
+#reply-snippet-text {
+    flex-grow: 1;
+    color: #555;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding-right: 10px;
+}
+
+#reply-snippet-text .reply-username {
+    font-weight: bold;
+    color: #4CAF50;
+}
+
+/* Message Input Area */
+.message-input-container {
+    display: flex;
+    padding: 10px 15px;
+    gap: 10px;
+    background-color: #f0f2f5;
+    border-top: 1px solid #e0e0e0;
+    align-items: flex-end; /* Align input and button at bottom */
 }
 
 #message-input {
     flex-grow: 1;
-    padding: 12px;
-    border: 2px solid #ccc; /* Default border */
-    border-radius: 25px;
-    background-color: #fff; /* Default background */
-    color: #333; /* Default text color */
-    font-size: 1.1em;
-    outline: none;
-    margin-right: 10px;
+    padding: 10px 15px;
+    border: 1px solid #ddd;
+    border-radius: 20px;
+    font-size: 1em;
+    resize: none; /* Prevent manual resize */
+    max-height: 100px; /* Limit input height */
+    overflow-y: auto; /* Scroll if content exceeds max-height */
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
     transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
-#message-input::placeholder {
-    color: #888;
-}
-
 #message-input:focus {
-    border-color: #66ccff; /* Default focus color */
-    box-shadow: 0 0 10px rgba(102, 204, 255, 0.5);
+    border-color: #4CAF50;
+    box-shadow: 0 0 5px rgba(76, 175, 80, 0.2);
+    outline: none;
 }
 
-#send-button {
-    background-color: #66ccff; /* Default button color */
-    color: #fff;
+/* Cool Buttons */
+.cool-button {
+    background-color: #4CAF50;
+    color: white;
     border: none;
-    border-radius: 50%;
-    width: 45px;
-    height: 45px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 1.3em;
+    border-radius: 20px;
+    padding: 10px 20px;
+    font-size: 1em;
     cursor: pointer;
-    transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
-    box-shadow: 0 2px 10px rgba(102, 204, 255, 0.4);
+    transition: background-color 0.3s ease, transform 0.1s ease;
+    min-width: 80px; /* Ensure consistent width for buttons */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
-#send-button:hover {
-    background-color: #33aaff;
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(51, 170, 255, 0.6);
+.cool-button:hover {
+    background-color: #43a047;
+    transform: translateY(-1px);
 }
 
-#send-button:disabled {
-    background-color: #ccc;
-    color: #888;
-    cursor: not-allowed;
-    box-shadow: none;
-    transform: none;
+.cool-button:active {
+    background-color: #388e3c;
+    transform: translateY(0);
 }
 
-/* --- Action Pop-up (Emoji + Reply) --- */
-#action-popup {
+.icon-button {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.2em;
+    cursor: pointer;
+    transition: color 0.3s ease, transform 0.1s ease;
+    padding: 5px;
+}
+
+.icon-button:hover {
+    color: #e0e0e0;
+    transform: scale(1.1);
+}
+
+/* Action Popup for Message Interactions */
+.action-popup {
     position: fixed;
-    background-color: rgba(255, 255, 255, 0.98); /* Default popup background */
-    border: 1px solid #ddd; /* Default border */
-    border-radius: 10px;
-    padding: 10px;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15); /* Default shadow */
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    padding: 10px 0;
     z-index: 1000;
-    display: flex;
-    flex-direction: column; /* Stack options vertically */
-    gap: 8px; /* Space between emoji options and reply button */
-    transform: scale(0.8) translateY(20px);
+    display: none; /* Hidden by default */
+    flex-direction: column;
+    min-width: 150px;
+    transition: opacity 0.2s ease, transform 0.2s ease;
     opacity: 0;
-    pointer-events: none;
-    transition: transform 0.2s ease-out, opacity 0.2s ease-out;
+    transform: scale(0.9);
+    transform-origin: top left; /* Adjust origin based on where it appears */
 }
 
-#action-popup.active {
-    transform: scale(1) translateY(0);
+.action-popup.active {
+    display: flex;
     opacity: 1;
-    pointer-events: auto;
+    transform: scale(1);
+}
+
+.action-item {
+    padding: 10px 15px;
+    cursor: pointer;
+    color: #333;
+    transition: background-color 0.2s ease;
+}
+
+.action-item:hover {
+    background-color: #f0f0f0;
+}
+
+.emoji-options-header {
+    font-size: 0.8em;
+    color: #777;
+    padding: 5px 15px 0;
+    text-transform: uppercase;
 }
 
 .emoji-options {
     display: flex;
-    flex-wrap: wrap; /* Allow emojis to wrap */
-    gap: 5px; /* Space between emojis */
+    flex-wrap: wrap;
+    padding: 5px 10px 5px 10px;
+    gap: 5px;
+    justify-content: center;
 }
 
 .emoji-option {
-    cursor: pointer;
-    font-size: 1.8em;
+    font-size: 1.5em;
     padding: 5px;
-    border-radius: 5px;
+    cursor: pointer;
+    border-radius: 4px;
     transition: background-color 0.2s ease, transform 0.1s ease;
-    background-color: rgba(0, 0, 0, 0.03); /* Default subtle background */
 }
 
 .emoji-option:hover {
-    background-color: rgba(0, 0, 0, 0.1);
+    background-color: #e0e0e0;
     transform: scale(1.1);
 }
 
-#reply-button {
-    background-color: #66ccff; /* Default button color */
-    color: white;
-    padding: 8px 12px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 0.9em;
-    font-weight: bold;
-    transition: background-color 0.2s ease;
-    text-align: center;
-}
-
-#reply-button:hover {
-    background-color: #33aaff;
-}
-
-/* --- Message Reaction Display --- */
-.message-reactions {
-    display: flex;
-    flex-wrap: wrap; /* Allow reactions to wrap */
-    gap: 5px;
-    margin-top: 8px;
-    font-size: 0.8em;
-}
-
-.reaction-item {
-    background-color: rgba(0, 0, 0, 0.08); /* Default reaction item background */
-    border-radius: 12px;
-    padding: 3px 8px;
-    display: flex;
-    align-items: center;
-    gap: 3px;
-    color: #555; /* Default text color */
-}
-
-.reaction-item small {
-    font-size: 0.9em;
-    color: #888; /* Default reactor name color */
-}
-
-/* Visual feedback for long press */
+/* Long Press Highlight */
 .message-bubble.long-press-active {
-    transform: scale(1.02);
-    box-shadow: 0 0 10px rgba(0, 150, 255, 0.5); /* Default long press glow */
+    box-shadow: 0 0 0 2px #4CAF50; /* A green outline for active long press */
+    transition: box-shadow 0.1s ease;
 }
 
-
-/* --- User Status Notifications --- */
-#user-status-notifications {
-    position: fixed; /* Fixed position relative to viewport */
-    bottom: 20px; /* Start near the bottom */
-    left: 50%;
-    transform: translateX(-50%); /* Center horizontally */
-    display: flex;
-    flex-direction: column; /* Stack notifications vertically */
-    align-items: center;
-    z-index: 999; /* Below pop-ups, above chat */
-    pointer-events: none; /* Allow clicks to pass through */
-    max-height: 80vh; /* Prevent notifications from taking up too much screen */
-    overflow: hidden; /* Hide overflowing notifications if too many stack up */
+/* Dark Theme Styles */
+body.dark-theme {
+    background-color: #1a202c;
+    color: #e2e8f0;
 }
 
-.user-status-message {
-    background-color: rgba(102, 204, 255, 0.9); /* Default softer blue background */
-    color: #333; /* Default dark text */
-    padding: 10px 20px;
-    border-radius: 25px;
-    margin-bottom: 10px; /* Space between notifications */
-    font-size: 1.1em;
-    font-weight: bold;
-    box-shadow: 0 5px 15px rgba(102, 204, 255, 0.3); /* Default softer shadow */
-    text-align: center;
-    white-space: nowrap; /* Prevent text wrapping */
-    animation: status-popup-animation 12s forwards; /* 12-second animation */
+body.dark-theme .screen,
+body.dark-theme .welcome-card,
+body.dark-theme .chat-container {
+    background-color: #2d3748;
 }
 
-/* Keyframe animation for status popups (remains the same timing/movement) */
-@keyframes status-popup-animation {
-    0% {
-        opacity: 0;
-        transform: translateY(50px) scale(0.9);
+body.dark-theme #welcome-screen h1 {
+    color: #68d391; /* Lighter green for dark theme */
+}
+
+body.dark-theme #username-input {
+    background-color: #4a5568;
+    border-color: #667e99;
+    color: #e2e8f0;
+}
+
+body.dark-theme #username-input:focus {
+    border-color: #68d391;
+    box-shadow: 0 0 8px rgba(104, 211, 145, 0.3);
+}
+
+body.dark-theme .chat-header {
+    background-color: #48bb78; /* Darker green for header */
+}
+
+body.dark-theme .online-users {
+    background-color: rgba(0, 0, 0, 0.2);
+}
+
+body.dark-theme .messages-container {
+    background-color: #2f3e51;
+}
+
+body.dark-theme .message-bubble.other {
+    background-color: #4a5568;
+    border: 1px solid #4a5568;
+    color: #e2e8f0;
+}
+
+body.dark-theme .message-bubble.me {
+    background-color: #38a169;
+    color: #e2e8f0;
+}
+
+body.dark-theme .message-bubble.admin {
+    background-color: #3182ce;
+    color: #e0f2f7;
+}
+
+body.dark-theme .message-bubble .username {
+    color: #68d391;
+}
+
+body.dark-theme .message-bubble.me .username {
+    color: #90cea9;
+}
+
+body.dark-theme .message-bubble .timestamp {
+    color: #a0aec0;
+}
+
+body.dark-theme .reply-snippet {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-left-color: #68d391;
+}
+
+body.dark-theme .reply-snippet .reply-username {
+    color: #68d391;
+}
+
+body.dark-theme .reply-snippet .reply-text {
+    color: #cbd5e0;
+}
+
+body.dark-theme .reaction-item {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #cbd5e0;
+}
+body.dark-theme .reaction-item small {
+    color: #a0aec0;
+}
+
+body.dark-theme #reply-snippet-container {
+    background-color: #2d3748;
+    border-top-color: #4a5568;
+    color: #e2e8f0;
+}
+
+body.dark-theme #message-input {
+    background-color: #4a5568;
+    border-color: #667e99;
+    color: #e2e8f0;
+}
+
+body.dark-theme #message-input:focus {
+    border-color: #68d391;
+    box-shadow: 0 0 5px rgba(104, 211, 145, 0.2);
+}
+
+body.dark-theme .cool-button {
+    background-color: #48bb78;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
+}
+
+body.dark-theme .cool-button:hover {
+    background-color: #38a169;
+}
+
+body.dark-theme .cool-button:active {
+    background-color: #2f855a;
+}
+
+body.dark-theme .icon-button {
+    color: #e2e8f0;
+}
+
+body.dark-theme .icon-button:hover {
+    color: #a0aec0;
+}
+
+body.dark-theme .action-popup {
+    background-color: #2d3748;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+body.dark-theme .action-item {
+    color: #e2e8f0;
+}
+
+body.dark-theme .action-item:hover {
+    background-color: #4a5568;
+}
+
+body.dark-theme .emoji-options-header {
+    color: #a0aec0;
+}
+
+body.dark-theme .emoji-option:hover {
+    background-color: #4a5568;
+}
+
+body.dark-theme .user-status-message {
+    color: #e2e8f0;
+}
+body.dark-theme .user-status-message.join {
+    background-color: #2f855a;
+    color: #e6ffe6;
+}
+body.dark-theme .user-status-message.leave {
+    background-color: #c53030;
+    color: #ffe6e6;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .screen {
+        border-radius: 0;
+        box-shadow: none;
+        width: 100%;
+        height: 100vh;
     }
-    5% {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
-    90% {
-        opacity: 1;
-        transform: translateY(-80px) scale(1);
-    }
-    95% {
-        opacity: 0.5;
-        transform: translateY(-120px) scale(1.1);
-    }
-    100% {
-        opacity: 0;
-        transform: translateY(-150px) scale(1.2);
+
+    body {
+        justify-content: flex-start; /* Align app to top on mobile */
+        align-items: flex-start;
     }
 }
