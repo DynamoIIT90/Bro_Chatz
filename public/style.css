@@ -6,16 +6,25 @@ body {
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    /* --- NEW THEME: Light, animating background --- */
-    background: linear-gradient(45deg, #e0f2f7, #f0f9fa, #e0f2f7, #f7fdfd); /* Light, subtle gradient */
+    /* --- DEFAULT RGB THEME BACKGROUND --- */
+    background: linear-gradient(135deg,
+        rgb(255, 0, 0),    /* Red */
+        rgb(255, 127, 0),  /* Orange */
+        rgb(255, 255, 0),  /* Yellow */
+        rgb(0, 255, 0),    /* Green */
+        rgb(0, 0, 255),    /* Blue */
+        rgb(75, 0, 130),   /* Indigo */
+        rgb(148, 0, 211)   /* Violet */
+    );
     background-size: 400% 400%; /* Make background larger for animation */
-    animation: background-shift 15s ease infinite alternate; /* Animates the gradient */
-    color: #333; /* Darker text for readability on light backgrounds */
+    animation: gradient-animation 20s ease infinite alternate; /* Animates the gradient */
+    color: #f0f0f0; /* Light text for contrast on the colorful background */
     overflow: hidden; /* Hide scrollbars that might appear due to popups initially */
+    transition: background-color 0.5s ease; /* Smooth transition for theme change */
 }
 
-/* New Keyframes for animating the body background */
-@keyframes background-shift {
+/* Original RGB Gradient Animation */
+@keyframes gradient-animation {
     0% {
         background-position: 0% 50%;
     }
@@ -24,13 +33,165 @@ body {
     }
 }
 
+/* --- DARK THEME STYLES --- */
+body.dark-theme {
+    background: linear-gradient(135deg, #0d1a2a, #0a1a1a); /* Dark gradient background */
+    color: #f0f0f0;
+}
+
+body.dark-theme #welcome-screen,
+body.dark-theme #chat-screen {
+    background-color: rgba(0, 0, 0, 0.7);
+    box-shadow: 0 0 30px rgba(0, 255, 255, 0.5); /* Cyan glow */
+}
+
+body.dark-theme #welcome-screen h1 {
+    color: #00ffff; /* Cyan color for heading */
+    text-shadow: 0 0 10px rgba(0, 255, 255, 0.7);
+}
+
+body.dark-theme #username-input,
+body.dark-theme #message-input {
+    border: 2px solid #00ffff;
+    background-color: #0d1a2a;
+    color: #f0f0f0;
+}
+
+body.dark-theme #username-input::placeholder,
+body.dark-theme #message-input::placeholder {
+    color: #aaa;
+}
+
+body.dark-theme #username-input:focus,
+body.dark-theme #message-input:focus {
+    border-color: #00aaff;
+    box-shadow: 0 0 15px rgba(0, 170, 255, 0.7);
+}
+
+body.dark-theme #start-chat-btn,
+body.dark-theme #send-button,
+body.dark-theme #reply-button {
+    background-color: #00ffff;
+    color: #0d1a2a;
+    box-shadow: 0 5px 15px rgba(0, 255, 255, 0.4);
+}
+
+body.dark-theme #start-chat-btn:hover,
+body.dark-theme #send-button:hover,
+body.dark-theme #reply-button:hover {
+    background-color: #00aaff;
+    box-shadow: 0 8px 20px rgba(0, 170, 255, 0.6);
+}
+
+body.dark-theme .chat-header,
+body.dark-theme .message-input-area {
+    background-color: rgba(13, 26, 42, 0.8);
+    border-color: #00ffff;
+    color: #00ffff;
+}
+
+body.dark-theme .online-users i {
+    color: #00ff00; /* Green for online indicator */
+}
+
+body.dark-theme #messages {
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+body.dark-theme #messages::-webkit-scrollbar-track {
+    background: #0d1a2a;
+}
+
+body.dark-theme #messages::-webkit-scrollbar-thumb {
+    background: #00ffff;
+}
+
+body.dark-theme #messages::-webkit-scrollbar-thumb:hover {
+    background: #00aaff;
+}
+
+body.dark-theme .message-bubble {
+    background-color: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+}
+
+body.dark-theme .message-bubble.admin {
+    background-color: rgba(255, 255, 0, 0.1);
+    border: 1px solid rgba(255, 255, 0, 0.5);
+}
+
+body.dark-theme .message-bubble.highlight {
+    animation: dark-highlight-message 1.5s ease-in-out; /* Dark theme specific highlight */
+}
+
+@keyframes dark-highlight-message {
+    0% {
+        box-shadow: 0 0 15px 5px rgba(0, 255, 255, 0.7); /* Bright cyan glow */
+        transform: scale(1.02);
+    }
+    50% {
+        box-shadow: 0 0 20px 8px rgba(0, 255, 255, 0.5);
+        transform: scale(1.03);
+    }
+    100% {
+        box-shadow: none;
+        transform: scale(1);
+    }
+}
+
+body.dark-theme .reply-snippet {
+    background-color: rgba(255, 255, 255, 0.08);
+    border-left: 3px solid #00ffff;
+    color: #bbb;
+}
+
+body.dark-theme .reply-snippet .reply-username {
+    color: #00ffff;
+}
+
+body.dark-theme #typing-indicator {
+    color: #aaa;
+}
+
+body.dark-theme #action-popup {
+    background-color: rgba(0, 0, 0, 0.85);
+    border: 1px solid #00ffff;
+    box-shadow: 0 5px 20px rgba(0, 255, 255, 0.7);
+}
+
+body.dark-theme .emoji-option {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+body.dark-theme .emoji-option:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+body.dark-theme .reaction-item {
+    background-color: rgba(255, 255, 255, 0.15);
+    color: #eee;
+}
+
+body.dark-theme .reaction-item small {
+    color: #bbb;
+}
+
+body.dark-theme .message-bubble.long-press-active {
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.7);
+}
+
+body.dark-theme .user-status-message {
+    background-color: rgba(0, 255, 255, 0.8);
+    color: #0d1a2a;
+    box-shadow: 0 5px 15px rgba(0, 255, 255, 0.5);
+}
+
 /* --- Welcome Screen --- */
 #welcome-screen {
-    /* --- NEW THEME: Lighter, softer shadows --- */
-    background-color: rgba(255, 255, 255, 0.95); /* Lighter background */
+    background-color: rgba(255, 255, 255, 0.95); /* Adjusted for default theme */
     padding: 40px;
     border-radius: 15px;
-    box-shadow: 0 0 25px rgba(0, 0, 0, 0.15); /* Softer shadow */
+    box-shadow: 0 0 25px rgba(0, 0, 0, 0.15);
     text-align: center;
     max-width: 400px;
     width: 90%;
@@ -38,31 +199,35 @@ body {
     opacity: 0; /* Start hidden */
     transform: translateY(20px); /* Start slightly below */
     display: none; /* Hidden by default, activated by JS */
+    /* --- FIX: Centering adjustment --- */
+    position: absolute; /* Add absolute positioning */
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%); /* Centering using translate */
+    transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
 }
 
 #welcome-screen.active {
     opacity: 1;
-    transform: translateY(0);
+    transform: translate(-50%, -50%) translateY(0); /* Adjust transform for centering */
     display: block; /* Show when active */
 }
 
 #welcome-screen h1 {
-    /* --- NEW THEME: Softer blue/grey for heading --- */
-    color: #555; /* Darker grey for heading */
+    color: #333; /* Dark text for default theme */
     margin-bottom: 25px;
     font-size: 2.2em;
-    text-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+    text-shadow: none;
 }
 
 #username-input {
     width: calc(100% - 20px);
     padding: 12px;
     margin-bottom: 20px;
-    /* --- NEW THEME: Softer borders/background --- */
-    border: 2px solid #ccc;
+    border: 2px solid #ccc; /* Softer border for default */
     border-radius: 8px;
-    background-color: #fff;
-    color: #333;
+    background-color: #fff; /* White background for default */
+    color: #333; /* Dark text for default */
     font-size: 1.1em;
     outline: none;
     transition: border-color 0.3s ease, box-shadow 0.3s ease;
@@ -73,9 +238,8 @@ body {
 }
 
 #username-input:focus {
-    /* --- NEW THEME: Softer focus glow --- */
-    border-color: #88ccee;
-    box-shadow: 0 0 10px rgba(136, 204, 238, 0.5);
+    border-color: #66ccff; /* Default focus color */
+    box-shadow: 0 0 10px rgba(102, 204, 255, 0.5);
 }
 
 #username-input.shake {
@@ -89,8 +253,7 @@ body {
 }
 
 #start-chat-btn {
-    /* --- NEW THEME: Softer blue button --- */
-    background-color: #66ccff;
+    background-color: #66ccff; /* Default button color */
     color: #fff;
     padding: 14px 30px;
     border: none;
@@ -111,8 +274,7 @@ body {
 /* --- Chat Screen --- */
 #chat-screen {
     display: none; /* Hidden by default, activated by JS */
-    /* --- NEW THEME: Lighter, softer shadows --- */
-    background-color: rgba(255, 255, 255, 0.95);
+    background-color: rgba(255, 255, 255, 0.95); /* Default theme background */
     border-radius: 15px;
     box-shadow: 0 0 25px rgba(0, 0, 0, 0.15);
     width: 95%;
@@ -134,23 +296,45 @@ body {
 
 /* --- Chat Header --- */
 .chat-header {
-    /* --- NEW THEME: Lighter header --- */
-    background-color: #f8f8f8;
+    background-color: #f8f8f8; /* Default header background */
     padding: 15px 20px;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid #eee; /* Default border */
     border-radius: 15px 15px 0 0;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    color: #555; /* Darker text */
+    color: #555; /* Default header text color */
     font-size: 1.1em;
     text-shadow: none;
+    position: relative; /* For theme toggle button positioning */
 }
 
-.chat-header h2 {
-    margin: 0;
-    font-size: 1.4em;
+/* --- Theme Toggle Button --- */
+#theme-toggle-btn {
+    position: absolute;
+    top: 15px; /* Adjust as needed */
+    left: 15px; /* Adjust as needed */
+    background: none;
+    border: none;
+    font-size: 1.5em;
+    cursor: pointer;
+    color: #666; /* Default color */
+    transition: color 0.3s ease;
+    z-index: 100;
 }
+
+#theme-toggle-btn:hover {
+    color: #333;
+}
+
+body.dark-theme #theme-toggle-btn {
+    color: #00ffff; /* Cyan color in dark theme */
+}
+
+body.dark-theme #theme-toggle-btn:hover {
+    color: #00aaff;
+}
+
 
 .online-users {
     display: flex;
@@ -159,8 +343,7 @@ body {
 
 .online-users i {
     margin-right: 8px;
-    /* --- NEW THEME: Darker green for online indicator --- */
-    color: #008800;
+    color: #008800; /* Default green for online indicator */
 }
 
 /* --- Messages Container --- */
@@ -169,8 +352,7 @@ body {
     padding: 20px;
     overflow-y: auto; /* Enable scrolling for messages */
     scroll-behavior: smooth;
-    /* --- NEW THEME: Lighter background --- */
-    background-color: rgba(255, 255, 255, 0.7);
+    background-color: rgba(255, 255, 255, 0.7); /* Default background */
     display: flex;
     flex-direction: column;
 }
@@ -180,14 +362,12 @@ body {
 }
 
 #messages::-webkit-scrollbar-track {
-    /* --- NEW THEME: Lighter scrollbar --- */
-    background: #f0f0f0;
+    background: #f0f0f0; /* Default scrollbar track */
     border-radius: 10px;
 }
 
 #messages::-webkit-scrollbar-thumb {
-    /* --- NEW THEME: Lighter scrollbar thumb --- */
-    background: #bbb;
+    background: #bbb; /* Default scrollbar thumb */
     border-radius: 10px;
 }
 
@@ -197,41 +377,39 @@ body {
 
 /* --- Message Bubble --- */
 .message-bubble {
-    /* --- NEW THEME: Lighter, softer shadows --- */
-    background-color: #fff;
+    background-color: #fff; /* Default bubble background */
     padding: 10px 15px;
     border-radius: 15px;
     margin-bottom: 10px;
     max-width: 70%;
     align-self: flex-start; /* Default alignment */
     position: relative; /* For reactions */
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* Default shadow */
     word-wrap: break-word; /* Ensure long words break */
     transition: background-color 0.2s ease, transform 0.1s ease; /* For long press visual feedback */
     border: 1px solid #eee; /* Default border */
 }
 
 .message-bubble.admin {
-    /* --- NEW THEME: Softer admin message color --- */
-    background-color: #fffacd; /* Light goldenrod yellow */
+    background-color: #fffacd; /* Default admin message color */
     border: 1px solid #eebb00;
     align-self: center; /* Center admin messages */
     text-align: center;
     max-width: 90%; /* Admin messages can be wider */
 }
 
-/* Highlight animation for reply snippet click (Updated to softer glow) */
+/* Highlight animation for reply snippet click (Updated to match default theme) */
 .message-bubble.highlight {
     animation: highlight-message 1.5s ease-in-out;
 }
 
 @keyframes highlight-message {
     0% {
-        box-shadow: 0 0 15px 5px rgba(136, 204, 238, 0.7); /* Softer blue glow */
+        box-shadow: 0 0 15px 5px rgba(102, 204, 255, 0.7); /* Softer blue glow */
         transform: scale(1.02);
     }
     50% {
-        box-shadow: 0 0 20px 8px rgba(136, 204, 238, 0.5);
+        box-shadow: 0 0 20px 8px rgba(102, 204, 255, 0.5);
         transform: scale(1.03);
     }
     100% {
@@ -240,13 +418,12 @@ body {
     }
 }
 
+
 .message-bubble .username {
     font-weight: bold;
     margin-bottom: 5px;
     display: block;
     word-wrap: break-word;
-    /* --- NEW THEME: Adjust color for better contrast on light bubbles --- */
-    /* This will be handled by JS adjustColor function */
 }
 
 .message-bubble .message-text {
@@ -256,14 +433,13 @@ body {
 
 /* Reply Snippet Styling */
 .reply-snippet {
-    /* --- NEW THEME: Softer reply snippet look --- */
-    background-color: rgba(0, 0, 0, 0.03); /* Very subtle background */
-    border-left: 3px solid #99ccff; /* Lighter blue border */
+    background-color: rgba(0, 0, 0, 0.03); /* Default subtle background */
+    border-left: 3px solid #99ccff; /* Default lighter blue border */
     padding: 5px 10px;
     margin-bottom: 8px;
     border-radius: 5px;
     font-size: 0.85em;
-    color: #666; /* Darker text */
+    color: #666; /* Default darker text */
     cursor: pointer;
     transition: background-color 0.2s ease;
 }
@@ -274,14 +450,13 @@ body {
 
 .reply-snippet .reply-username {
     font-weight: bold;
-    color: #6699ff; /* Lighter blue for replied username */
+    color: #6699ff; /* Default lighter blue for replied username */
 }
 
 /* --- Typing Indicator --- */
 #typing-indicator {
     padding: 5px 20px;
-    /* --- NEW THEME: Darker text for typing indicator --- */
-    color: #666;
+    color: #666; /* Default text for typing indicator */
     font-style: italic;
     min-height: 20px; /* Reserve space */
     transition: opacity 0.3s ease-in-out;
@@ -295,10 +470,9 @@ body {
 
 /* --- Message Input Area --- */
 .message-input-area {
-    /* --- NEW THEME: Lighter input area background --- */
-    background-color: #f8f8f8;
+    background-color: #f8f8f8; /* Default input area background */
     padding: 15px 20px;
-    border-top: 1px solid #eee;
+    border-top: 1px solid #eee; /* Default border */
     border-radius: 0 0 15px 15px;
     display: flex;
     align-items: center;
@@ -307,11 +481,10 @@ body {
 #message-input {
     flex-grow: 1;
     padding: 12px;
-    /* --- NEW THEME: Softer borders/background --- */
-    border: 2px solid #ccc;
+    border: 2px solid #ccc; /* Default border */
     border-radius: 25px;
-    background-color: #fff;
-    color: #333;
+    background-color: #fff; /* Default background */
+    color: #333; /* Default text color */
     font-size: 1.1em;
     outline: none;
     margin-right: 10px;
@@ -323,14 +496,12 @@ body {
 }
 
 #message-input:focus {
-    /* --- NEW THEME: Softer focus glow --- */
-    border-color: #88ccee;
-    box-shadow: 0 0 10px rgba(136, 204, 238, 0.5);
+    border-color: #66ccff; /* Default focus color */
+    box-shadow: 0 0 10px rgba(102, 204, 255, 0.5);
 }
 
 #send-button {
-    /* --- NEW THEME: Softer blue button --- */
-    background-color: #66ccff;
+    background-color: #66ccff; /* Default button color */
     color: #fff;
     border: none;
     border-radius: 50%;
@@ -362,12 +533,11 @@ body {
 /* --- Action Pop-up (Emoji + Reply) --- */
 #action-popup {
     position: fixed;
-    /* --- NEW THEME: Lighter popup with softer shadows --- */
-    background-color: rgba(255, 255, 255, 0.98);
-    border: 1px solid #ddd;
+    background-color: rgba(255, 255, 255, 0.98); /* Default popup background */
+    border: 1px solid #ddd; /* Default border */
     border-radius: 10px;
     padding: 10px;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15); /* Default shadow */
     z-index: 1000;
     display: flex;
     flex-direction: column; /* Stack options vertically */
@@ -396,8 +566,7 @@ body {
     padding: 5px;
     border-radius: 5px;
     transition: background-color 0.2s ease, transform 0.1s ease;
-    /* --- NEW THEME: Subtle background for emoji options --- */
-    background-color: rgba(0, 0, 0, 0.03);
+    background-color: rgba(0, 0, 0, 0.03); /* Default subtle background */
 }
 
 .emoji-option:hover {
@@ -406,8 +575,7 @@ body {
 }
 
 #reply-button {
-    /* --- NEW THEME: Softer blue button --- */
-    background-color: #66ccff;
+    background-color: #66ccff; /* Default button color */
     color: white;
     padding: 8px 12px;
     border: none;
@@ -433,26 +601,24 @@ body {
 }
 
 .reaction-item {
-    /* --- NEW THEME: Softer reaction item look --- */
-    background-color: rgba(0, 0, 0, 0.08);
+    background-color: rgba(0, 0, 0, 0.08); /* Default reaction item background */
     border-radius: 12px;
     padding: 3px 8px;
     display: flex;
     align-items: center;
     gap: 3px;
-    color: #555; /* Darker text */
+    color: #555; /* Default text color */
 }
 
 .reaction-item small {
     font-size: 0.9em;
-    color: #888; /* Softer grey for reactor name */
+    color: #888; /* Default reactor name color */
 }
 
 /* Visual feedback for long press */
 .message-bubble.long-press-active {
     transform: scale(1.02);
-    /* --- NEW THEME: Softer long press glow --- */
-    box-shadow: 0 0 10px rgba(0, 150, 255, 0.5);
+    box-shadow: 0 0 10px rgba(0, 150, 255, 0.5); /* Default long press glow */
 }
 
 
@@ -472,15 +638,14 @@ body {
 }
 
 .user-status-message {
-    /* --- NEW THEME: Lighter, softer status message --- */
-    background-color: rgba(136, 204, 238, 0.9); /* Softer blue background */
-    color: #333; /* Dark text */
+    background-color: rgba(102, 204, 255, 0.9); /* Default softer blue background */
+    color: #333; /* Default dark text */
     padding: 10px 20px;
     border-radius: 25px;
     margin-bottom: 10px; /* Space between notifications */
     font-size: 1.1em;
     font-weight: bold;
-    box-shadow: 0 5px 15px rgba(136, 204, 238, 0.3); /* Softer shadow */
+    box-shadow: 0 5px 15px rgba(102, 204, 255, 0.3); /* Default softer shadow */
     text-align: center;
     white-space: nowrap; /* Prevent text wrapping */
     animation: status-popup-animation 12s forwards; /* 12-second animation */

@@ -1,7 +1,7 @@
 // script.js
 // This file handles all client-side logic for the Bro_Chatz application.
 // The Gemini API key is now securely handled on the server-side.
-// Added reply functionality.
+// Added reply functionality and theme toggling.
 
 // Establish a Socket.IO connection to the server.
 const socket = io();
@@ -20,6 +20,7 @@ const userStatusNotifications = document.getElementById('user-status-notificatio
 const actionPopup = document.getElementById('action-popup'); // Renamed from emojiReactionPopup
 const emojiOptionsContainer = actionPopup.querySelector('.emoji-options');
 const replyButton = document.getElementById('reply-button'); // New reply button
+const themeToggleBtn = document.getElementById('theme-toggle-btn'); // NEW: Theme toggle button
 
 // --- Global Variables ---
 let username = '';
@@ -64,9 +65,6 @@ function displayUserStatus(msg) {
     notificationDiv.textContent = msg;
     userStatusNotifications.appendChild(notificationDiv);
 
-    // Remove the notification after its animation finishes
-    // The animation is now 12s, and `forwards` keeps it at the end state (faded out).
-    // So, we can just remove it when the animation completes.
     notificationDiv.addEventListener('animationend', () => {
         notificationDiv.remove();
     });
@@ -84,9 +82,16 @@ function addMessage(data, isSelf = false) {
     // Defensive check for data.color
     const messageColor = data.color || 'rgb(128, 128, 128)'; // Default to grey if color is undefined
 
-    // Set background and border color based on user's assigned color
-    const bubbleBgColor = messageColor.replace('rgb', 'rgba').replace(')', ', 0.2)'); // 20% opacity
-    const bubbleBorderColor = messageColor.replace('rgb', 'rgba').replace(')', ', 0.5)'); // 50% opacity
+    // Set background and border color based on user's assigned color (Default theme values)
+    let bubbleBgColor = messageColor.replace('rgb', 'rgba').replace(')', ', 0.1)'); // 10% opacity for default
+    let bubbleBorderColor = messageColor.replace('rgb', 'rgba').replace(')', ', 0.3)'); // 30% opacity for default
+
+    // Override for dark theme if active
+    if (document.body.classList.contains('dark-theme')) {
+        bubbleBgColor = messageColor.replace('rgb', 'rgba').replace(')', ', 0.2)'); // 20% opacity for dark theme
+        bubbleBorderColor = messageColor.replace('rgb', 'rgba').replace(')', ', 0.5)'); // 50% opacity for dark theme
+    }
+
     messageBubble.style.backgroundColor = bubbleBgColor;
     messageBubble.style.border = `1px solid ${bubbleBorderColor}`;
 
@@ -95,8 +100,15 @@ function addMessage(data, isSelf = false) {
         messageBubble.classList.add('admin'); // Reusing admin class for AI for consistent styling
         // Set specific color for AI messages
         if (data.username === 'Bro_Chatz AI') {
-            messageBubble.style.backgroundColor = 'rgba(173, 216, 230, 0.2)'; // Light blue for AI
-            messageBubble.style.borderColor = 'rgba(173, 216, 230, 0.5)';
+            // Default theme AI color
+            messageBubble.style.backgroundColor = 'rgba(173, 216, 230, 0.1)'; // Light blue for AI, lower opacity
+            messageBubble.style.borderColor = 'rgba(173, 216, 230, 0.3)';
+
+            // Dark theme AI color override
+            if (document.body.classList.contains('dark-theme')) {
+                messageBubble.style.backgroundColor = 'rgba(173, 216, 230, 0.2)'; // Light blue for AI, higher opacity for dark theme
+                messageBubble.style.borderColor = 'rgba(173, 216, 230, 0.5)';
+            }
         }
     }
 
@@ -139,7 +151,12 @@ function addMessage(data, isSelf = false) {
     usernameSpan.classList.add('username');
     usernameSpan.textContent = data.username;
     // Adjust username color for better contrast against the bubble
-    usernameSpan.style.color = adjustColor(messageColor, data.username === 'Bro_Chatz Admin' || data.username === 'Bro_Chatz AI' ? 0 : 50); // Lighten user color, keep admin/AI colors as is
+    // Darken for default theme, lighten for dark theme
+    if (document.body.classList.contains('dark-theme')) {
+        usernameSpan.style.color = adjustColor(messageColor, data.username === 'Bro_Chatz Admin' || data.username === 'Bro_Chatz AI' ? 0 : 50);
+    } else {
+        usernameSpan.style.color = adjustColor(messageColor, data.username === 'Bro_Chatz Admin' || data.username === 'Bro_Chatz AI' ? 0 : -50); // Darken for default
+    }
 
     // Create message text span
     const messageTextSpan = document.createElement('span');
@@ -355,6 +372,15 @@ async function askGemini(prompt) {
     }
 }
 
+// --- Theme Toggling Logic ---
+function toggleTheme() {
+    document.body.classList.toggle('dark-theme');
+    const isDark = document.body.classList.contains('dark-theme');
+    localStorage.setItem('theme', isDark ? 'dark' : 'rgb'); // Save preference
+    // Update button icon (optional, using font-awesome for sun/moon)
+    themeToggleBtn.innerHTML = isDark ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+}
+
 // --- Event Listeners ---
 
 // Handle "Start Chat" button click
@@ -364,8 +390,11 @@ startChatBtn.addEventListener('click', () => {
         username = enteredUsername;
         socket.emit('join chat', username); // Tell the server a user joined
         welcomeScreen.classList.remove('active');
-        chatScreen.classList.add('active');
-        messageInput.focus(); // Focus on message input
+        // Delay adding chat-screen.active to allow for smooth transition after welcome screen hides
+        setTimeout(() => {
+            chatScreen.classList.add('active');
+            messageInput.focus(); // Focus on message input
+        }, 500); // Match welcome screen transition duration
     } else {
         usernameInput.placeholder = 'Please enter a name!';
         usernameInput.classList.add('shake'); // Add a shake animation for feedback
@@ -481,13 +510,14 @@ replyButton.addEventListener('click', () => {
             text: originalText
         };
 
-        // NEW: Do NOT pre-fill the input with the message snippet
         messageInput.value = ''; // Ensure it's empty
-
         messageInput.focus();
         hideActionPopup();
     }
 });
+
+// NEW: Theme Toggle Button Listener
+themeToggleBtn.addEventListener('click', toggleTheme);
 
 
 // --- Socket.IO Event Handlers (Receiving from Server) ---
@@ -500,8 +530,6 @@ socket.on('set color', (color) => {
 
 // Receive chat messages from server
 socket.on('chat message', (data) => {
-    // If the message is from the current user, add 'self-message' class for potential styling
-    // (though our current CSS aligns all messages to left, this can be used for future right-alignment)
     const isSelf = data.username === username;
     addMessage(data, isSelf);
 });
@@ -533,7 +561,6 @@ socket.on('user typing', (typingUsernames) => {
         if (filteredTyping.length === 1) {
             typingIndicator.textContent = `${filteredTyping[0]} is typing...`;
         } else {
-            // Join last two with 'and', others with commas
             const lastUser = filteredTyping.pop();
             const text = filteredTyping.length > 0
                 ? `${filteredTyping.join(', ')} and ${lastUser} are typing...`
@@ -550,7 +577,7 @@ socket.on('message reacted', ({ messageId, emoji, reactorName }) => {
     addReactionToMessage(messageId, emoji, reactorName);
 });
 
-// NEW: Handle incoming reply notifications
+// Handle incoming reply notifications
 socket.on('receive_reply_notification', ({ repliedToUsername, replierUsername }) => {
     if (repliedToUsername === username) { // Only show notification if this client is the one who was replied to
         displayUserStatus(`${replierUsername} replied to you!`);
@@ -563,4 +590,17 @@ socket.on('receive_reply_notification', ({ repliedToUsername, replierUsername })
 document.addEventListener('DOMContentLoaded', () => {
     welcomeScreen.classList.add('active');
     usernameInput.focus();
+
+    // Load theme preference from localStorage
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+        document.body.classList.add('dark-theme');
+        themeToggleBtn.innerHTML = '<i class="fas fa-sun"></i>'; // Set sun icon for dark theme
+    } else {
+        themeToggleBtn.innerHTML = '<i class="fas fa-moon"></i>'; // Set moon icon for RGB theme
+    }
+
+    // Add the theme toggle button to the header once chat screen is active
+    // This is implicitly done if the button is already in index.html
+    // but ensures the icon is correct from the start.
 });
