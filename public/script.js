@@ -34,6 +34,8 @@ let currentReplyMessageId = null; // Stores the ID of the message being replied 
 
 // --- Event Listeners and Initial Setup (Ensures DOM is ready) ---
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM fully loaded.'); // ADDED LOG
+
     // Select all DOM elements once the document's structure is fully loaded
     welcomeScreen = document.getElementById('welcome-screen');
     chatScreen = document.getElementById('chat-screen');
@@ -54,6 +56,8 @@ document.addEventListener('DOMContentLoaded', () => {
     cancelReplyBtn = document.getElementById('cancel-reply-btn');
     userStatusNotifications = document.getElementById('user-status-notifications');
 
+    console.log('Elements selected. Welcome screen:', welcomeScreen, 'Start Chat Button:', startChatBtn); // ADDED LOG
+
     // --- Initial UI Setup ---
     if (welcomeScreen) {
         welcomeScreen.classList.add('active'); // Ensure welcome screen is visible initially
@@ -70,9 +74,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // Handle "Start Chat" button click
     if (startChatBtn) {
         startChatBtn.addEventListener('click', () => {
+            console.log('Start Chat button clicked!'); // ADDED LOG
             const enteredUsername = usernameInput ? usernameInput.value.trim() : '';
             if (enteredUsername) {
                 currentUsername = enteredUsername;
+                console.log('Attempting to set username:', currentUsername); // ADDED LOG
                 socket.emit('set_username', currentUsername); // Send the chosen username to the server
             } else {
                 // Provide visual feedback if username is empty
@@ -501,6 +507,23 @@ socket.on('disconnect', () => {
     console.log('Disconnected from chat server!');
     displayUserStatus('You have been disconnected. Please refresh to rejoin.', 'left');
 });
+
+// IMPORTANT: Handle the 'username_set' event from the server
+socket.on('username_set', (data) => {
+    console.log('Server confirmed username set:', data.username); // ADDED LOG
+    currentUsername = data.username;
+    myAssignedColor = data.color; // Store the color for 'me' messages
+
+    if (welcomeScreen && chatScreen && messageInput) {
+        welcomeScreen.classList.remove('active'); // Hide welcome screen
+        chatScreen.classList.add('active'); // Show chat screen
+        messageInput.focus(); // Focus the message input
+        console.log('Switched to chat screen. Message input focused.'); // ADDED LOG
+    } else {
+        console.error('Could not find welcomeScreen, chatScreen, or messageInput to switch views.');
+    }
+});
+
 
 // Update the count of online users
 socket.on('user_count', (count) => {
