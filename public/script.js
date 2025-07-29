@@ -1,3 +1,6 @@
+// --- Global Flag for DOMContentLoaded (CRITICAL for preventing duplicate listeners) ---
+let domContentLoadedFired = false;
+
 // --- DOM Elements (Declared here, selected once DOM is fully loaded) ---
 let welcomeScreen;
 let chatScreen;
@@ -34,6 +37,13 @@ let currentReplyMessageId = null; // Stores the ID of the message being replied 
 
 // --- Event Listeners and Initial Setup (Ensures DOM is ready) ---
 document.addEventListener('DOMContentLoaded', () => {
+    // Prevent re-initialization if DOMContentLoaded fires multiple times
+    if (domContentLoadedFired) {
+        console.warn('DOMContentLoaded fired more than once, skipping re-initialization.');
+        return;
+    }
+    domContentLoadedFired = true; // Set the flag to true after the first execution
+
     console.log('DOM fully loaded.'); // ADDED LOG
 
     // Select all DOM elements once the document's structure is fully loaded
@@ -522,6 +532,19 @@ socket.on('username_set', (data) => {
     } else {
         console.error('Could not find welcomeScreen, chatScreen, or messageInput to switch views.');
     }
+});
+
+// IMPORTANT: Handle errors when setting username
+socket.on('username_set_error', (errorData) => {
+    console.error('Username setting failed:', errorData.message);
+    if (usernameInput) {
+        usernameInput.classList.add('shake');
+        usernameInput.placeholder = errorData.message;
+        setTimeout(() => usernameInput.classList.remove('shake'), 1000);
+    }
+    // You might also want to display a more prominent error message to the user
+    // e.g., using an alert or a dedicated error div on the welcome screen.
+    displayAdminMessage(`Error: ${errorData.message}`);
 });
 
 
