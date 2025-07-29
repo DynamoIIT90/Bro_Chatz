@@ -6,7 +6,6 @@ let welcomeScreen;
 let chatScreen;
 let usernameInput;
 let startChatBtn;
-// let themeToggleBtn; // Removed for this version
 let onlineUsersCount;
 let messagesContainer;
 let messageInput;
@@ -25,7 +24,6 @@ const socket = io();
 
 // --- Global Variables ---
 let currentUsername = '';
-// let myAssignedColor = ''; // No longer explicitly needed as color is generated client-side for consistency
 let typingTimer; // Used to manage the "typing..." indicator timeout
 const TYPING_DELAY = 5000; // 5 seconds before 'stop_typing' is emitted (as per request)
 let longPressTimer; // Timer for detecting long presses on messages
@@ -50,7 +48,6 @@ document.addEventListener('DOMContentLoaded', () => {
     chatScreen = document.getElementById('chat-screen');
     usernameInput = document.getElementById('username-input');
     startChatBtn = document.getElementById('start-chat-btn');
-    // themeToggleBtn = document.getElementById('theme-toggle-btn'); // Removed
     onlineUsersCount = document.getElementById('online-users-count');
     messagesContainer = document.getElementById('messages');
     messageInput = document.getElementById('message-input');
@@ -262,15 +259,21 @@ function getRandomRgbColor() {
     const r = Math.floor(Math.random() * 256);
     const g = Math.floor(Math.random() * 256);
     const b = Math.floor(Math.random() * 256);
-    // Attempt to ensure good contrast - simple heuristic
-    // Avoid very light colors if background is light, or very dark if background is dark
+
+    // Calculate brightness to ensure visibility on light backgrounds.
+    // A common formula for perceived brightness (luminance)
     const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-    // If the color is too bright, make it a bit darker to stand out on light backgrounds
-    if (brightness > 200) {
-        return `rgb(${Math.floor(r * 0.8)}, ${Math.floor(g * 0.8)}, ${Math.floor(b * 0.8)})`;
+
+    // If the color is too light, make it a bit darker to stand out.
+    // 180 is an arbitrary threshold, can be adjusted.
+    if (brightness > 180) {
+        return `rgb(${Math.floor(r * 0.7)}, ${Math.floor(g * 0.7)}, ${Math.floor(b * 0.7)})`;
     }
-    // If the color is too dark, make it a bit lighter to stand out on dark backgrounds (if a dark theme were enabled)
-    // For a fixed light theme, we want colors that stand out well.
+    // If the color is too dark, ensure it's not so dark that it blends into light text on a light background.
+    // This is less critical if text color is fixed, but good practice.
+    if (brightness < 70) { // If very dark, lighten it a bit
+        return `rgb(${Math.min(255, r + 50)}, ${Math.min(255, g + 50)}, ${Math.min(255, b + 50)})`;
+    }
     return `rgb(${r}, ${g}, ${b})`;
 }
 
@@ -281,25 +284,24 @@ function displayMessage(username, message, timestamp, type = 'user', messageId =
     const messageBubble = document.createElement('div');
     messageBubble.classList.add('message-bubble');
 
-    let usernameColor = color; // Use color from server if provided
+    let usernameColor = color; // Use color from server if provided (e.g., for self or AI)
 
     if (username === currentUsername && type === 'user') {
         messageBubble.classList.add('me');
-        // 'me' messages can have a fixed color or server-assigned, or you can even apply RGB here if you want your own name to burst.
-        // For simplicity, sticking to fixed green for 'me' as per previous discussions.
+        // Your own messages (class 'me') have a username color defined in CSS (e.g., #2e7d32).
         // If you want YOUR username to also be RGB, remove the 'me' specific username color from CSS
-        // and let this function generate one.
+        // and add `usernameColor = getRandomRgbColor();` here.
     } else if (type === 'user') {
         messageBubble.classList.add('other');
-        // Ensure RGB for 'other' users
-        if (!usernameColor) { // If server didn't provide a color, generate one
+        // Ensure RGB for 'other' users. Generate if not provided by server.
+        if (!usernameColor) {
             usernameColor = getRandomRgbColor();
         }
     }
 
     if (type === 'admin') {
         messageBubble.classList.add('admin');
-        // Admin messages have fixed colors in CSS
+        // Admin messages have fixed colors in CSS.
     }
 
     if (messageId) {
@@ -428,11 +430,6 @@ function handlePointerDown(e) {
 
     // Only proceed if it's a left click or a touch
     if (e.button === 0 || e.touches) {
-        // Prevent default context menu on touch devices
-        // if (e.touches && e.cancelable) {
-        //     e.preventDefault(); // This can sometimes prevent normal clicks too
-        // }
-
         lastTouchTargetMessage = targetBubble;
         if (lastTouchTargetMessage) {
             lastTouchTargetMessage.classList.add('long-press-active');
@@ -469,8 +466,6 @@ function handlePointerUp(e) {
                 hideActionPopup();
             }
         }
-        // If it was a long press that triggered the popup, lastTouchTargetMessage
-        // will be cleared by hideActionPopup when the user interacts with the popup or clicks away.
     }
 
     if (lastTouchTargetMessage && lastTouchTargetMessage.dataset) {
@@ -520,7 +515,6 @@ function displayUserStatus(message, type = 'join') {
         statusDiv.classList.add('show');
     });
 
-
     // Remove status message after a delay with fade-out
     setTimeout(() => {
         statusDiv.classList.remove('show'); // Trigger fade-out
@@ -535,7 +529,6 @@ function displayUserStatus(message, type = 'join') {
 
 socket.on('connect', () => {
     console.log('Connected to chat server!');
-    // Removed welcome message from here, handled by server on 'username_set'
 });
 
 socket.on('disconnect', () => {

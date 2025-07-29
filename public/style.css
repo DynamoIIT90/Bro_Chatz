@@ -9,14 +9,14 @@ body {
     min-height: 100vh;
     color: #333;
     transition: background-color 0.3s ease, color 0.3s ease;
-    overflow: hidden; /* Prevent body scroll */
+    overflow-x: hidden; /* Prevent horizontal scroll */
 }
 
 #app {
     display: flex;
     justify-content: center;
     align-items: center;
-    width: 100%;
+    width: 100%; /* Make app fill 100% width */
     height: 100vh; /* Full viewport height */
     overflow: hidden;
     position: relative; /* For proper stacking of screens */
@@ -24,32 +24,32 @@ body {
 
 /* Screen Management */
 .screen {
-    width: 100%;
-    max-width: 420px; /* Limits width on larger screens */
+    width: 100%; /* Ensure screens take full width of their parent */
+    max-width: 420px; /* Limits width on larger screens, but allows 100% on small */
     height: 100vh; /* Full height for mobile responsiveness */
-    display: flex; /* Always flex, control visibility with opacity/pointer-events */
+    display: flex;
     flex-direction: column;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
     background-color: #fff;
     border-radius: 8px;
-    overflow: hidden; /* Ensures content doesn't spill out */
-    transition: opacity 0.4s ease-in-out, transform 0.4s ease-in-out; /* Smooth transition */
-    position: absolute; /* To allow stacking on top of each other */
+    overflow: hidden;
+    transition: opacity 0.4s ease-in-out, transform 0.4s ease-in-out;
+    position: absolute;
     top: 0;
     left: 50%;
-    transform: translateX(-50%) scale(0.98); /* Slightly scale down when inactive */
+    transform: translateX(-50%) scale(0.98);
     opacity: 0;
-    pointer-events: none; /* Prevents interaction when hidden */
-    z-index: 1; /* Default z-index */
+    pointer-events: none;
+    z-index: 1;
+    box-sizing: border-box; /* Crucial for consistent padding/width calculations */
 }
 
 .screen.active {
     opacity: 1;
-    pointer-events: auto; /* Allows interaction when active */
-    transform: translateX(-50%) scale(1); /* Full size when active */
-    z-index: 2; /* Bring active screen to front */
+    pointer-events: auto;
+    transform: translateX(-50%) scale(1);
+    z-index: 2;
 }
-
 
 /* Welcome Screen Specifics */
 #welcome-screen {
@@ -70,6 +70,7 @@ body {
     gap: 20px;
     width: 100%; /* Take full width of its parent (.screen) */
     max-width: 360px; /* Limit card width */
+    box-sizing: border-box; /* Include padding in width */
 }
 
 .welcome-logo {
@@ -86,7 +87,7 @@ body {
 }
 
 #username-input {
-    width: calc(100% - 40px);
+    width: calc(100% - 40px); /* Adjusted for padding */
     padding: 12px 20px;
     margin-bottom: 20px;
     border: 1px solid #ddd;
@@ -94,6 +95,7 @@ body {
     font-size: 1em;
     outline: none;
     transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    box-sizing: border-box; /* Include padding in width */
 }
 
 #username-input:focus {
@@ -114,9 +116,11 @@ body {
 
 /* Chat Screen Layout */
 #chat-screen {
-    display: flex; /* Ensure flex for chat container */
+    display: flex;
     flex-direction: column;
     justify-content: space-between;
+    width: 100%; /* Ensure full width on mobile */
+    box-sizing: border-box;
 }
 
 .chat-container {
@@ -124,6 +128,8 @@ body {
     flex-direction: column;
     height: 100%; /* Take full height of the screen */
     background-color: #fff;
+    width: 100%; /* Ensure full width */
+    box-sizing: border-box;
 }
 
 .chat-header {
@@ -135,14 +141,16 @@ body {
     align-items: center;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     z-index: 10;
-    position: relative; /* For positioning elements within header */
+    position: relative;
+    width: 100%; /* Ensure header takes full width */
+    box-sizing: border-box; /* Include padding in width */
 }
 
 .chat-title {
     font-size: 1.2em;
     font-weight: bold;
-    flex-grow: 1; /* Allows title to take available space */
-    text-align: center; /* Center the title */
+    flex-grow: 1;
+    text-align: center;
 }
 
 /* Online Users Capsule with Blinking Effect */
@@ -160,7 +168,7 @@ body {
     display: flex;
     align-items: center;
     gap: 5px;
-    animation: pulse 2s infinite ease-in-out; /* Add this line for blinking */
+    animation: pulse 2s infinite ease-in-out;
 }
 
 /* User Status Notifications (Join/Leave) - Pop-up/Fade-out */
@@ -169,15 +177,16 @@ body {
     text-align: center;
     font-size: 0.8em;
     color: #666;
-    position: absolute; /* Position over the chat */
-    top: 60px; /* Below the header */
+    position: absolute;
+    top: 60px;
     width: 100%;
     left: 0;
-    z-index: 9; /* Below the header, above messages */
-    pointer-events: none; /* Allow clicks to pass through */
+    z-index: 9;
+    pointer-events: none;
     display: flex;
     flex-direction: column;
     align-items: center;
+    box-sizing: border-box; /* Include padding in width */
 }
 
 .user-status-message {
@@ -185,11 +194,11 @@ body {
     padding: 5px 10px;
     border-radius: 15px;
     display: inline-block;
-    opacity: 0; /* Start hidden for fade-in */
-    transform: translateY(-10px) scale(0.9); /* Start slightly up and smaller for burst effect */
+    opacity: 0;
+    transform: translateY(-10px) scale(0.9);
     transition: opacity 0.5s ease-out, transform 0.5s ease-out;
-    pointer-events: auto; /* Re-enable pointer events for the message itself */
-    max-width: 80%; /* Limit width */
+    pointer-events: auto;
+    max-width: 80%;
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
@@ -216,6 +225,8 @@ body {
     background-color: #f8f9fa;
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
+    width: 100%; /* Ensure it takes full width */
+    box-sizing: border-box; /* Include padding in width */
 }
 
 /* Individual Message Bubbles */
@@ -223,7 +234,7 @@ body {
     display: flex;
     flex-direction: column;
     margin-bottom: 10px;
-    max-width: 80%;
+    max-width: 80%; /* Messages won't exceed 80% of container width */
     position: relative;
     border-radius: 12px;
     padding: 8px 12px;
@@ -231,6 +242,7 @@ body {
     line-height: 1.4;
     word-wrap: break-word;
     transition: background-color 0.2s ease;
+    box-sizing: border-box; /* Include padding in width */
 }
 
 .message-bubble.me {
@@ -257,6 +269,7 @@ body {
     padding: 5px 10px;
     max-width: 90%;
     margin: 5px auto;
+    box-sizing: border-box;
 }
 
 .message-bubble.highlight {
@@ -275,7 +288,6 @@ body {
     font-weight: bold;
     margin-bottom: 4px;
     font-size: 0.85em;
-    /* NO `color` property here. This allows inline styles like `style="color: rgb(R,G,B);"` to dictate the color. */
 }
 
 /* Specific colors for 'me' and 'admin' */
@@ -356,6 +368,8 @@ body {
     height: 20px; /* Reserve space */
     opacity: 0;
     transition: opacity 0.3s ease-in-out;
+    width: 100%; /* Ensure full width */
+    box-sizing: border-box;
 }
 
 #typing-indicator.active {
@@ -372,13 +386,15 @@ body {
     align-items: center;
     font-size: 0.9em;
     display: none; /* Hidden by default, shown when active */
-    opacity: 0; /* Start hidden for fade */
-    transform: translateY(10px); /* Start slightly down for burst */
+    opacity: 0;
+    transform: translateY(10px);
     transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+    width: 100%; /* Ensure full width */
+    box-sizing: border-box;
 }
 
 #reply-snippet-container.active {
-    display: flex; /* Override display: none */
+    display: flex;
     opacity: 1;
     transform: translateY(0);
 }
@@ -404,7 +420,9 @@ body {
     gap: 10px;
     background-color: #f0f2f5;
     border-top: 1px solid #e0e0e0;
-    align-items: flex-end; /* Align input and button at bottom */
+    align-items: flex-end;
+    width: 100%; /* Ensure full width */
+    box-sizing: border-box; /* Include padding in width */
 }
 
 #message-input {
@@ -413,11 +431,12 @@ body {
     border: 1px solid #ddd;
     border-radius: 20px;
     font-size: 1em;
-    resize: none; /* Prevent manual resize */
-    max-height: 100px; /* Limit input height */
-    overflow-y: auto; /* Scroll if content exceeds max-height */
+    resize: none;
+    max-height: 100px;
+    overflow-y: auto;
     box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
     transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    box-sizing: border-box; /* Include padding in width */
 }
 
 #message-input:focus {
@@ -453,17 +472,26 @@ body {
 .icon-button {
     background: none;
     border: none;
-    color: white;
+    color: #333; /* Icon buttons in reply snippet container will be dark */
     font-size: 1.2em;
     cursor: pointer;
     transition: color 0.3s ease, transform 0.1s ease;
     padding: 5px;
 }
+/* Header icon buttons (if any are added, like a menu button) */
+.chat-header .icon-button {
+    color: white; /* Header buttons should be white */
+}
+
 
 .icon-button:hover {
-    color: #e0e0e0;
+    color: #666; /* Darker hover for dark icons */
     transform: scale(1.1);
 }
+.chat-header .icon-button:hover {
+    color: #e0e0e0; /* Lighter hover for white icons */
+}
+
 
 /* Action Popup for Message Interactions */
 .action-popup {
@@ -473,11 +501,11 @@ body {
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
     padding: 10px 0;
     z-index: 1000;
-    display: none; /* Hidden by default */
+    display: none;
     flex-direction: column;
     min-width: 150px;
-    opacity: 0; /* Control visibility with opacity and pointer-events */
-    transform: scale(0.9); /* Start slightly smaller for burst effect */
+    opacity: 0;
+    transform: scale(0.9);
     pointer-events: none;
     transition: opacity 0.2s ease, transform 0.2s ease;
 }
@@ -530,22 +558,69 @@ body {
 
 /* Long Press Highlight */
 .message-bubble.long-press-active {
-    box-shadow: 0 0 0 2px #4CAF50; /* A green outline for active long press */
+    box-shadow: 0 0 0 2px #4CAF50;
     transition: box-shadow 0.1s ease;
 }
 
-/* Responsive Adjustments */
+/* Responsive Adjustments - These are key */
 @media (max-width: 768px) {
+    body {
+        align-items: flex-start; /* Start content at the top on small screens */
+        min-height: 100vh; /* Ensure full height */
+    }
+
+    #app {
+        height: 100vh; /* Make app fill entire viewport height */
+        align-items: stretch; /* Stretch content vertically */
+    }
+
     .screen {
-        border-radius: 0;
-        box-shadow: none;
-        max-width: 100%;
+        border-radius: 0; /* No rounded corners on mobile */
+        box-shadow: none; /* No shadow on mobile */
+        max-width: 100%; /* Take full width */
         left: 0;
         transform: translateX(0) scale(1); /* No transform on mobile */
+        height: 100vh; /* Explicitly full height */
     }
+
     .welcome-card {
         padding: 20px;
         border-radius: 0;
         box-shadow: none;
+        max-width: none; /* Allow card to expand */
+        width: 100%; /* Fill parent width */
+    }
+
+    .chat-container {
+        height: 100vh; /* Explicitly set chat container to full viewport height */
+    }
+
+    .message-input-container {
+        padding: 8px 10px; /* Slightly less padding on mobile */
+        gap: 8px;
+    }
+
+    #message-input {
+        padding: 8px 12px; /* Adjust input padding */
+    }
+
+    .cool-button {
+        padding: 8px 15px; /* Adjust button padding */
+    }
+
+    .chat-header {
+        padding: 12px 15px; /* Adjust header padding */
+    }
+
+    .online-users {
+        padding: 4px 8px; /* Adjust online users padding */
+    }
+
+    .messages-container {
+        padding: 8px 10px; /* Adjust messages container padding */
+    }
+
+    .message-bubble {
+        max-width: 90%; /* Allow messages to be a bit wider on small screens */
     }
 }
