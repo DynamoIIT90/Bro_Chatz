@@ -6,7 +6,7 @@ let welcomeScreen;
 let chatScreen;
 let usernameInput;
 let startChatBtn;
-let themeToggleBtn;
+// let themeToggleBtn; // Removed for this version
 let onlineUsersCount;
 let messagesContainer;
 let messageInput;
@@ -25,7 +25,7 @@ const socket = io();
 
 // --- Global Variables ---
 let currentUsername = '';
-// myAssignedColor is now handled by server for consistency, or generated randomly if not provided
+// let myAssignedColor = ''; // No longer explicitly needed as color is generated client-side for consistency
 let typingTimer; // Used to manage the "typing..." indicator timeout
 const TYPING_DELAY = 5000; // 5 seconds before 'stop_typing' is emitted (as per request)
 let longPressTimer; // Timer for detecting long presses on messages
@@ -50,7 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
     chatScreen = document.getElementById('chat-screen');
     usernameInput = document.getElementById('username-input');
     startChatBtn = document.getElementById('start-chat-btn');
-    themeToggleBtn = document.getElementById('theme-toggle-btn');
+    // themeToggleBtn = document.getElementById('theme-toggle-btn'); // Removed
     onlineUsersCount = document.getElementById('online-users-count');
     messagesContainer = document.getElementById('messages');
     messageInput = document.getElementById('message-input');
@@ -77,9 +77,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (usernameInput) {
         usernameInput.focus();
     }
-
-    // Load user's theme preference from browser's local storage
-    loadThemePreference();
 
     // --- Core Event Listeners ---
 
@@ -110,11 +107,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         });
-    }
-
-    // Toggle between light and dark themes
-    if (themeToggleBtn) {
-        themeToggleBtn.addEventListener('click', toggleTheme);
     }
 
     // Send message when the send button is clicked
@@ -220,31 +212,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// --- Theme Toggling Functions ---
-function toggleTheme() {
-    document.body.classList.toggle('dark-theme');
-    const isDark = document.body.classList.contains('dark-theme');
-    if (themeToggleBtn) {
-        themeToggleBtn.innerHTML = isDark ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
-    }
-    localStorage.setItem('theme', isDark ? 'dark' : 'light');
-}
-
-function loadThemePreference() {
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme === 'dark') {
-        document.body.classList.add('dark-theme');
-        if (themeToggleBtn) {
-            themeToggleBtn.innerHTML = '<i class="fas fa-sun"></i>';
-        }
-    } else {
-        document.body.classList.remove('dark-theme');
-        if (themeToggleBtn) {
-            themeToggleBtn.innerHTML = '<i class="fas fa-moon"></i>';
-        }
-    }
-}
-
 // --- Message Sending Function ---
 async function sendMessage() {
     const messageText = messageInput ? messageInput.value.trim() : '';
@@ -290,17 +257,20 @@ async function sendMessage() {
     socket.emit('stop_typing');
 }
 
-// Function to generate a random RGB color
+// Function to generate a random RGB color (always generate for 'other' users)
 function getRandomRgbColor() {
     const r = Math.floor(Math.random() * 256);
     const g = Math.floor(Math.random() * 256);
     const b = Math.floor(Math.random() * 256);
-    // Ensure sufficient contrast against both light and dark backgrounds
-    // This is a simple heuristic, can be improved.
+    // Attempt to ensure good contrast - simple heuristic
+    // Avoid very light colors if background is light, or very dark if background is dark
     const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-    if (brightness < 128) { // If too dark, lighten it
-        return `rgb(${Math.min(255, r + 50)}, ${Math.min(255, g + 50)}, ${Math.min(255, b + 50)})`;
+    // If the color is too bright, make it a bit darker to stand out on light backgrounds
+    if (brightness > 200) {
+        return `rgb(${Math.floor(r * 0.8)}, ${Math.floor(g * 0.8)}, ${Math.floor(b * 0.8)})`;
     }
+    // If the color is too dark, make it a bit lighter to stand out on dark backgrounds (if a dark theme were enabled)
+    // For a fixed light theme, we want colors that stand out well.
     return `rgb(${r}, ${g}, ${b})`;
 }
 
@@ -311,14 +281,25 @@ function displayMessage(username, message, timestamp, type = 'user', messageId =
     const messageBubble = document.createElement('div');
     messageBubble.classList.add('message-bubble');
 
+    let usernameColor = color; // Use color from server if provided
+
     if (username === currentUsername && type === 'user') {
         messageBubble.classList.add('me');
+        // 'me' messages can have a fixed color or server-assigned, or you can even apply RGB here if you want your own name to burst.
+        // For simplicity, sticking to fixed green for 'me' as per previous discussions.
+        // If you want YOUR username to also be RGB, remove the 'me' specific username color from CSS
+        // and let this function generate one.
     } else if (type === 'user') {
         messageBubble.classList.add('other');
+        // Ensure RGB for 'other' users
+        if (!usernameColor) { // If server didn't provide a color, generate one
+            usernameColor = getRandomRgbColor();
+        }
     }
 
     if (type === 'admin') {
         messageBubble.classList.add('admin');
+        // Admin messages have fixed colors in CSS
     }
 
     if (messageId) {
@@ -339,9 +320,7 @@ function displayMessage(username, message, timestamp, type = 'user', messageId =
         <span class="reaction-item">${emoji} <small>${count}</small></span>
     `).join('');
 
-    // Dynamically apply RGB color to username if not provided by server
-    const usernameColor = color || getRandomRgbColor();
-    const usernameSpanStyle = `style="color: ${usernameColor};"`;
+    const usernameSpanStyle = usernameColor ? `style="color: ${usernameColor};"` : '';
 
     messageBubble.innerHTML = `
         ${replySnippetHtml}
@@ -556,6 +535,7 @@ function displayUserStatus(message, type = 'join') {
 
 socket.on('connect', () => {
     console.log('Connected to chat server!');
+    // Removed welcome message from here, handled by server on 'username_set'
 });
 
 socket.on('disconnect', () => {
@@ -579,6 +559,7 @@ socket.on('username_set', (data) => {
     } else {
         console.error('Could not find welcomeScreen, chatScreen, or messageInput to switch views.');
     }
+    displayUserStatus(`Welcome, ${currentUsername}!`, 'joined'); // Welcome greeting
 });
 
 // IMPORTANT: Handle errors when setting username
@@ -645,7 +626,9 @@ socket.on('typing_users_update', (typersArray) => {
 // Handle user joined/left status updates
 socket.on('user_status', (data) => {
     const { username, status } = data;
-    if (username !== currentUsername) {
+    // Only display status if it's not the current user's own status upon joining
+    // The welcome greeting is handled separately on 'username_set'
+    if (username !== currentUsername || status === 'left') {
         displayUserStatus(`${username} has ${status === 'joined' ? 'joined' : 'left'}.`, status);
     }
 });

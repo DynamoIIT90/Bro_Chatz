@@ -135,7 +135,7 @@ body {
     align-items: center;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     z-index: 10;
-    position: relative; /* For positioning the theme toggle button */
+    position: relative; /* For positioning elements within header */
 }
 
 .chat-title {
@@ -143,11 +143,6 @@ body {
     font-weight: bold;
     flex-grow: 1; /* Allows title to take available space */
     text-align: center; /* Center the title */
-}
-
-.header-left-button {
-    position: absolute;
-    left: 15px;
 }
 
 /* Online Users Capsule with Blinking Effect */
@@ -283,7 +278,7 @@ body {
     /* NO `color` property here. This allows inline styles like `style="color: rgb(R,G,B);"` to dictate the color. */
 }
 
-/* Specific colors for 'me' and 'admin' can still exist if desired */
+/* Specific colors for 'me' and 'admin' */
 .message-bubble.me .username {
     color: #2e7d32; /* Example: a darker green for your own username */
 }
@@ -537,166 +532,6 @@ body {
 .message-bubble.long-press-active {
     box-shadow: 0 0 0 2px #4CAF50; /* A green outline for active long press */
     transition: box-shadow 0.1s ease;
-}
-
-/* Dark Theme Styles */
-body.dark-theme {
-    background-color: #1a202c;
-    color: #e2e8f0;
-}
-
-body.dark-theme .screen,
-body.dark-theme .welcome-card,
-body.dark-theme .chat-container {
-    background-color: #2d3748;
-}
-
-body.dark-theme #welcome-screen h1 {
-    color: #68d391;
-}
-
-body.dark-theme #username-input {
-    background-color: #4a5568;
-    border-color: #667e99;
-    color: #e2e8f0;
-}
-
-body.dark-theme #username-input:focus {
-    border-color: #68d391;
-    box-shadow: 0 0 8px rgba(104, 211, 145, 0.3);
-}
-
-body.dark-theme .chat-header {
-    background-color: #48bb78;
-}
-
-body.dark-theme .online-users {
-    background-color: rgba(0, 0, 0, 0.2);
-}
-
-body.dark-theme .messages-container {
-    background-color: #2f3e51;
-}
-
-body.dark-theme .message-bubble.other {
-    background-color: #4a5568;
-    border: 1px solid #4a5568;
-    color: #e2e8f0;
-}
-
-body.dark-theme .message-bubble.me {
-    background-color: #38a169;
-    color: #e2e8f0;
-}
-
-body.dark-theme .message-bubble.admin {
-    background-color: #3182ce;
-    color: #e0f2f7;
-}
-
-/* Ensure dynamic RGB colors are not overridden in dark theme */
-body.dark-theme .message-bubble.me .username {
-    /* No color here, rely on inline style or default for 'me' */
-}
-body.dark-theme .message-bubble.admin .username {
-    color: #0288d1;
-}
-
-
-body.dark-theme .message-bubble .timestamp {
-    color: #a0aec0;
-}
-
-body.dark-theme .reply-snippet {
-    background-color: rgba(255, 255, 255, 0.1);
-    border-left-color: #68d391;
-}
-
-body.dark-theme .reply-snippet .reply-username {
-    color: #68d391;
-}
-
-body.dark-theme .reply-snippet .reply-text {
-    color: #cbd5e0;
-}
-
-body.dark-theme .reaction-item {
-    background-color: rgba(255, 255, 255, 0.1);
-    color: #cbd5e0;
-}
-body.dark-theme .reaction-item small {
-    color: #a0aec0;
-}
-
-body.dark-theme #reply-snippet-container {
-    background-color: #2d3748;
-    border-top-color: #4a5568;
-    color: #e2e8f0;
-}
-
-body.dark-theme #message-input {
-    background-color: #4a5568;
-    border-color: #667e99;
-    color: #e2e8f0;
-}
-
-body.dark-theme #message-input:focus {
-    border-color: #68d391;
-    box-shadow: 0 0 5px rgba(104, 211, 145, 0.2);
-}
-
-body.dark-theme .cool-button {
-    background-color: #48bb78;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
-}
-
-body.dark-theme .cool-button:hover {
-    background-color: #38a169;
-}
-
-body.dark-theme .cool-button:active {
-    background-color: #2f855a;
-}
-
-body.dark-theme .icon-button {
-    color: #e2e8f0;
-}
-
-body.dark-theme .icon-button:hover {
-    color: #a0aec0;
-}
-
-body.dark-theme .action-popup {
-    background-color: #2d3748;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-}
-
-body.dark-theme .action-item {
-    color: #e2e8f0;
-}
-
-body.dark-theme .action-item:hover {
-    background-color: #4a5568;
-}
-
-body.dark-theme .emoji-options-header {
-    color: #a0aec0;
-}
-
-body.dark-theme .emoji-option:hover {
-    background-color: #4a5568;
-}
-
-body.dark-theme .user-status-message {
-    color: #e2e8f0;
-}
-body.dark-theme .user-status-message.join {
-    background-color: #2f855a;
-    color: #e6ffe6;
-}
-body.dark-theme .user-status-message.leave {
-    background-color: #c53030;
-    color: #ffe6e6;
 }
 
 /* Responsive Adjustments */

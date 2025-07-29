@@ -72,7 +72,7 @@ app.post('/ask-ai', async (req, res) => {
     if (!userPrompt) {
         return res.status(400).json({ error: 'Prompt is required.' });
     }
-    if (!GEMINI_API_KEY || GEMINI_API_KEY === 'YOUR_GEMINI_API_KEY_HERE') {
+    if (!GEMINI_API_KEY || GEMINI_API_KEY === 'AIzaSyC0vAo8oWOb22IGUy2J5TrzrKFxobpMj5g') {
         return res.status(500).json({ error: 'Gemini API key is not configured on the server.' });
     }
 
