@@ -455,6 +455,25 @@ body.dark-theme #theme-toggle-btn:hover {
     color: #333; /* Default message text color */
 }
 
+/* My messages */
+.message-bubble.me {
+    background-color: #e0f2f7; /* Light blue for my messages */
+    align-self: flex-end; /* Align to the right */
+    border-bottom-right-radius: 5px; /* Adjust border radius for "my" messages */
+    border: 1px solid #d0e7ed;
+    color: #222;
+}
+
+/* Other users' messages */
+.message-bubble.other {
+    background-color: #ffffff; /* White for other messages */
+    align-self: flex-start; /* Align to the left */
+    border-bottom-left-radius: 5px; /* Adjust border radius for "other" messages */
+    border: 1px solid #eee;
+    color: #333;
+}
+
+
 .message-bubble.admin {
     background-color: #fffacd; /* Default admin message color */
     border: 1px solid #eebb00;
