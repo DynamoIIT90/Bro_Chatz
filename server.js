@@ -29,33 +29,38 @@ const io = new Server(server, {
     serveClient: false
 });
 
-// Enhanced middleware with error handling
-app.use((req, res, next) => {
-    try {
-        express.static(path.join(__dirname, 'public'))(req, res, next);
-    } catch (error) {
-        console.error('Static file serving error:', error);
-        next(error);
-    }
-});
+// Minimal middleware to avoid body-parser issues
+app.use(express.static(path.join(__dirname, 'public')));
 
+// Manual JSON parsing to avoid body-parser
 app.use((req, res, next) => {
-    try {
-        express.json({ limit: '10mb' })(req, res, next);
-    } catch (error) {
-        console.error('JSON parsing error:', error);
-        res.status(400).json({ error: 'Invalid JSON' });
+    if (req.method === 'POST' && req.headers['content-type'] === 'application/json') {
+        let body = '';
+        req.on('data', chunk => {
+            body += chunk.toString();
+        });
+        req.on('end', () => {
+            try {
+                req.body = JSON.parse(body);
+            } catch (e) {
+                req.body = {};
+            }
+            next();
+        });
+    } else {
+        next();
     }
 });
 
 // Health check endpoint for Render
 app.get('/health', (req, res) => {
-    res.status(200).json({ 
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ 
         status: 'OK', 
         message: 'BRO_CHATZ is running!',
         timestamp: new Date().toISOString(),
         uptime: process.uptime()
-    });
+    }));
 });
 
 // Root route with error handling
@@ -65,12 +70,14 @@ app.get('/', (req, res) => {
         res.sendFile(indexPath, (err) => {
             if (err) {
                 console.error('Error sending index.html:', err);
-                res.status(500).send('Server Error: Unable to load the application');
+                res.writeHead(500, { 'Content-Type': 'text/plain' });
+                res.end('Server Error: Unable to load the application');
             }
         });
     } catch (error) {
         console.error('Route error:', error);
-        res.status(500).send('Server Error');
+        res.writeHead(500, { 'Content-Type': 'text/plain' });
+        res.end('Server Error');
     }
 });
 
