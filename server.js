@@ -82,7 +82,7 @@ app.get('/', (req, res) => {
 });
 
 // Store connected users
-const connectedUsers = new Map();
+const onlineUsers = new Map();
 const restrictedUsernames = ['developer', 'DEVELOPER', 'Developer', 'DEVEL0PER', 'devel0per'];
 const userColors = [
     '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
@@ -162,6 +162,7 @@ io.on('connection', (socket) => {
         } else {
             username = userData.username ? userData.username.trim() : '';
             isDeveloper = userData.isDeveloper || false;
+
         }
 
         // Validate username
@@ -212,13 +213,18 @@ io.on('connection', (socket) => {
                         socket.handshake.address || 
                         'Unknown';
 
-        connectedUsers.set(socket.id, {
-            username: cleanUsername,
-            color: userColor,
-            joinTime: new Date(),
-            isDeveloper: isDeveloper,
-            ip: clientIP
-        });
+        onlineUsers.set(socket.id, {
+    username: cleanUsername,
+    color: userColor,
+    joinTime: new Date(),
+    isDeveloper: isDeveloper,
+    ip: clientIP
+});
+
+// ✅ update count + dev panel immediately
+io.emit('update-online-count', onlineUsers.size);
+io.emit('online-users-list', Array.from(onlineUsers.values()));
+
 
         // Send welcome message
         const welcomeMessage = isDeveloper ? 
@@ -362,35 +368,25 @@ io.on('connection', (socket) => {
         } catch (error) {
             console.error('Error in message-reaction:', error);
         }
+socket.on('get-online-users', () => {
+    socket.emit('online-users-list', Array.from(onlineUsers.values()));
     });
 
     // Handle user disconnection
-    socket.on('disconnect', (reason) => {
-        try {
-            const user = connectedUsers.get(socket.id);
-            if (user) {
-                // Notify all users about user leaving
-                socket.broadcast.emit('user-notification', {
-                    message: `${user.username} exited the chatz`,
-                    type: 'leave',
-                    username: user.username,
-                    color: user.color,
-                    timestamp: new Date()
-                });
-                
-                connectedUsers.delete(socket.id);
-                
-                // Update online count
-                io.emit('update-online-count', connectedUsers.size);
-                
-                console.log(`👋 User ${user.username} disconnected (${reason})`);
-            }
-        } catch (error) {
-            console.error('Error in disconnect:', error);
-        }
-        console.log('❌ User disconnected:', socket.id, 'Reason:', reason);
-    });
+socket.on('disconnect', () => {
+    try {
+        onlineUsers.delete(socket.id);
 
+        // ✅ update count and dev list again
+        io.emit('update-online-count', onlineUsers.size);
+        io.emit('online-users-list', Array.from(onlineUsers.values()));
+
+        console.log(`User disconnected: ${socket.id}`);
+    } catch (err) {
+        console.error('Error in disconnect:', err);
+    }
+});                
+            
     // Handle connection errors
     socket.on('error', (error) => {
         console.error('Socket error for', socket.id, ':', error);
