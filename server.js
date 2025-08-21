@@ -213,6 +213,47 @@ io.on('connection', (socket) => {
                         socket.conn.remoteAddress || 
                         socket.handshake.address || 
                         'Unknown';
+// ===== Handle WARN =====
+socket.on('warn-user', (data) => {
+    try {
+        const { username, reason } = data;
+        const userEntry = [...onlineUsers.entries()].find(([id, u]) => u.username === username);
+        if (userEntry) {
+            const [targetId, user] = userEntry;
+            io.to(targetId).emit('user-warned', { username, reason });
+            console.log(`⚠️ ${username} warned: ${reason}`);
+        }
+    } catch (err) {
+        console.error('Error in warn-user:', err);
+    }
+});
+
+// ===== Handle KICK =====
+socket.on('kick-user', (data) => {
+    try {
+        const { username } = data;
+        const userEntry = [...onlineUsers.entries()].find(([id, u]) => u.username === username);
+        if (userEntry) {
+            const [targetId, user] = userEntry;
+
+            // Tell user + others
+            io.to(targetId).emit('user-kicked', { username });
+            io.emit('kick-notification', { username });
+
+            // Disconnect and cleanup
+            io.sockets.sockets.get(targetId)?.disconnect(true);
+            onlineUsers.delete(targetId);
+
+            // Update everyone
+            io.emit('update-online-count', onlineUsers.size);
+            io.emit('online-users-list', Array.from(onlineUsers.values()));
+
+            console.log(`🚫 ${username} kicked out`);
+        }
+    } catch (err) {
+        console.error('Error in kick-user:', err);
+    }
+});
 
         onlineUsers.set(socket.id, {
     username: cleanUsername,
@@ -220,6 +261,7 @@ io.on('connection', (socket) => {
     joinTime: new Date(),
     isDeveloper: isDeveloper,
     ip: clientIP
+
 });
 
 // ✅ update count + dev panel immediately
