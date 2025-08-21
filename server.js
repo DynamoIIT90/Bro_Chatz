@@ -90,6 +90,7 @@ const userColors = [
     '#F8C471', '#82E0AA', '#F1948A', '#85C1E9', '#D7BDE2'
 ];
 
+let currentPhonk = "/phonk.mp3"; // default track
 // Enhanced Gemini AI Integration with better error handling
 let genAI, model;
 
@@ -221,6 +222,23 @@ io.on('connection', (socket) => {
                 `🎉 Welcome to BRO_CHATZ, ${cleanUsername}! Ready to chat with awesome people? Let's get this party started! 🚀`;
 
             socket.emit('admin-message', { message: welcomeMessage, timestamp: new Date(), type: 'welcome' });
+
+    // ===== Developer Phonk broadcasting =====
+if (cleanUsername === "DEVELOPER") {
+    // When developer joins, everyone hears current track
+    io.emit("playPhonk", { track: currentPhonk });
+}
+
+// Allow developer to change Phonk
+socket.on("changePhonk", (trackPath) => {
+    const user = onlineUsers.get(socket.id);
+    if (user && user.isDeveloper) {
+        currentPhonk = trackPath; // save server-side
+        io.emit("playPhonk", { track: currentPhonk }); // broadcast to all
+        console.log(`🎵 Phonk changed to: ${trackPath}`);
+    }
+});
+
 
             // Notify all users (except dev) of join
             if (!isDeveloper) {

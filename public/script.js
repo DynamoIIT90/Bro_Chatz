@@ -28,6 +28,13 @@ let selectedMessage = null;
 let replyingTo = null;
 let isDeveloper = false;
 let onlineUsers = new Map();
+let phonkAudio = new Audio();
+phonkAudio.loop = false;
+
+
+
+
+
 // Initialize App
 document.addEventListener('DOMContentLoaded', function() {
     createParticleField();
@@ -101,17 +108,30 @@ function initializeEventListeners() {
     developerPassword.addEventListener('input', checkEliteCredentials);
 
     eliteLoginBtn.addEventListener('click', function() {
-        const username = developerUsername.value.trim();
-        const password = developerPassword.value.trim();
-        
-        if (username.toLowerCase() === 'developer' && password === 'vivekisgod8085') {
-            isDeveloper = true;
-            currentUser = 'DEVELOPER';
-            startChat();
-        } else {
-            alert('Invalid developer credentials!');
+    const username = developerUsername.value.trim();
+    const password = developerPassword.value.trim();
+    
+    if (username.toLowerCase() === 'developer' && password === 'vivekisgod8085') {
+        isDeveloper = true;
+        currentUser = 'DEVELOPER';
+        startChat();
+
+        // Play Phonk track once per session
+        if (!sessionStorage.getItem('phonkPlayed')) {
+            phonkAudio.src = 'phonk.mp3'; // <-- replace with actual path
+            phonkAudio.play().catch(err => console.log('Audio play blocked:', err));
+            
+            phonkAudio.onended = () => {
+                phonkAudio.src = ''; // unload track
+            };
+            
+            sessionStorage.setItem('phonkPlayed', 'true'); // mark as played
         }
-    });
+    } else {
+        alert('Invalid developer credentials!');
+    }
+});
+
 eliteLoginBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
   developerPassword.addEventListener('keypress', function(e) {
     if (e.key === 'Enter' && !eliteLoginBtn.disabled) {
@@ -261,7 +281,19 @@ function startChat() {
     }
 
     currentUser = username;
-    
+    // Developer Phonk — play once per browser session
+if (currentUser === "DEVELOPER" && !sessionStorage.getItem('phonkPlayed')) {
+    const phonkAudio = new Audio('phonk.mp3'); // file path relative to public folder
+    phonkAudio.volume = 0.5; // optional volume
+    phonkAudio.play().catch(() => {
+        console.log('Autoplay blocked, will play after user interaction');
+    });
+    phonkAudio.addEventListener('ended', () => {
+        console.log('Phonk finished playing');
+    });
+    sessionStorage.setItem('phonkPlayed', 'true');
+}
+
     // Show loading screen
     showLoadingScreen();
     
