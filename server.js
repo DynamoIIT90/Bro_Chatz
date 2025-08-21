@@ -165,6 +165,7 @@ io.on('connection', (socket) => {
 
         }
 
+
         // Validate username
         if (!username || username.length === 0) {
             socket.emit('error-message', { message: 'Invalid username provided' });
@@ -191,7 +192,7 @@ io.on('connection', (socket) => {
         }
         
         // Check if username is already taken
-        const existingUser = Array.from(connectedUsers.values()).find(user => 
+        const existingUser = Array.from(onlineUsers.values()).find(user => 
             user.username.toLowerCase() === cleanUsername.toLowerCase()
         );
         
@@ -203,7 +204,7 @@ io.on('connection', (socket) => {
         }
 
         // Assign unique color
-        const colorIndex = connectedUsers.size % userColors.length;
+        const colorIndex = onlineUsers.size % userColors.length;
         const userColor = userColors[colorIndex];
         
         // Get client IP address
@@ -256,7 +257,7 @@ io.emit('online-users-list', Array.from(onlineUsers.values()));
     // Enhanced chat message handling
     socket.on('chat-message', (data) => {
         try {
-            const user = connectedUsers.get(socket.id);
+            const user = onlineUsers.get(socket.id);
             if (!user) {
                 socket.emit('error-message', { message: 'User not found. Please refresh and rejoin.' });
                 return;
@@ -324,7 +325,7 @@ io.emit('online-users-list', Array.from(onlineUsers.values()));
     // Handle typing indicators with validation
     socket.on('typing-start', () => {
         try {
-            const user = connectedUsers.get(socket.id);
+            const user = onlineUsers.get(socket.id);
             if (user) {
                 socket.broadcast.emit('user-typing', {
                     username: user.username,
@@ -339,7 +340,7 @@ io.emit('online-users-list', Array.from(onlineUsers.values()));
 
     socket.on('typing-stop', () => {
         try {
-            const user = connectedUsers.get(socket.id);
+            const user = onlineUsers.get(socket.id);
             if (user) {
                 socket.broadcast.emit('user-typing', {
                     username: user.username,
@@ -355,7 +356,7 @@ io.emit('online-users-list', Array.from(onlineUsers.values()));
     // Handle message reactions with validation
     socket.on('message-reaction', (data) => {
         try {
-            const user = connectedUsers.get(socket.id);
+            const user = onlineUsers.get(socket.id);
             if (user && data && data.messageId && data.emoji) {
                 io.emit('message-reaction', {
                     messageId: data.messageId,
@@ -390,8 +391,11 @@ socket.on('disconnect', () => {
     // Handle connection errors
     socket.on('error', (error) => {
         console.error('Socket error for', socket.id, ':', error);
+          });
     });
-});
+
+    });
+
 
 // Enhanced error handling
 process.on('uncaughtException', (error) => {
