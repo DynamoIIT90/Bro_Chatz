@@ -151,152 +151,94 @@ async function generateAIResponse(prompt) {
 io.on('connection', (socket) => {
     console.log('🚀 New user connected:', socket.id);
 
-    // Handle user joining with validation
+    // ===== User joined =====
     socket.on('user-joined', (userData) => {
-    try {
-        let username, isDeveloper = false;
-        
-        // Handle both old string format and new object format
-        if (typeof userData === 'string') {
-            username = userData.trim();
-        } else {
-            username = userData.username ? userData.username.trim() : '';
-            isDeveloper = userData.isDeveloper || false;
+        try {
+            let username, isDeveloper = false;
 
-        }
+            // Handle string or object format
+            if (typeof userData === 'string') {
+                username = userData.trim();
+            } else {
+                username = userData.username ? userData.username.trim() : '';
+                isDeveloper = userData.isDeveloper || false;
+            }
 
-
-        // Validate username
-        if (!username || username.length === 0) {
-            socket.emit('error-message', { message: 'Invalid username provided' });
-            return;
-        }
-
-        const cleanUsername = username.substring(0, 50);
-        
-        // Check if it's a developer login
-        if (isDeveloper) {
-            if (cleanUsername !== 'DEVELOPER') {
-                socket.emit('error-message', { message: 'Invalid developer credentials' });
+            if (!username || username.length === 0) {
+                socket.emit('error-message', { message: 'Invalid username provided' });
                 return;
             }
-        } else {
-            // Check for restricted usernames for normal users
-            if (restrictedUsernames.some(restricted => 
-                cleanUsername.toLowerCase() === restricted.toLowerCase())) {
-                socket.emit('error-message', { 
-                    message: 'This username is reserved. Please choose another one.' 
-                });
+
+            const cleanUsername = username.substring(0, 50);
+
+            // Developer validation
+            if (isDeveloper) {
+                if (cleanUsername !== 'DEVELOPER') {
+                    socket.emit('error-message', { message: 'Invalid developer credentials' });
+                    return;
+                }
+            } else {
+                if (restrictedUsernames.some(restricted => cleanUsername.toLowerCase() === restricted.toLowerCase())) {
+                    socket.emit('error-message', { message: 'This username is reserved. Please choose another one.' });
+                    return;
+                }
+            }
+
+            // Check duplicate
+            const existingUser = Array.from(onlineUsers.values()).find(user => user.username.toLowerCase() === cleanUsername.toLowerCase());
+            if (existingUser) {
+                socket.emit('username-taken', { message: 'Username is already taken. Please choose another one.' });
                 return;
             }
-        }
-        
-        // Check if username is already taken
-        const existingUser = Array.from(onlineUsers.values()).find(user => 
-            user.username.toLowerCase() === cleanUsername.toLowerCase()
-        );
-        
-        if (existingUser) {
-            socket.emit('username-taken', { 
-                message: 'Username is already taken. Please choose another one.' 
+
+            // Assign color
+            const colorIndex = onlineUsers.size % userColors.length;
+            const userColor = userColors[colorIndex];
+
+            // Get client IP
+            const clientIP = socket.handshake.headers['x-forwarded-for'] || 
+                             socket.handshake.headers['x-real-ip'] || 
+                             socket.conn.remoteAddress || 
+                             socket.handshake.address || 
+                             'Unknown';
+
+            // Add user
+            onlineUsers.set(socket.id, {
+                username: cleanUsername,
+                color: userColor,
+                joinTime: new Date(),
+                isDeveloper: isDeveloper,
+                ip: clientIP
             });
-            return;
-        }
 
-        // Assign unique color
-        const colorIndex = onlineUsers.size % userColors.length;
-        const userColor = userColors[colorIndex];
-        
-        // Get client IP address
-        const clientIP = socket.handshake.headers['x-forwarded-for'] || 
-                        socket.handshake.headers['x-real-ip'] || 
-                        socket.conn.remoteAddress || 
-                        socket.handshake.address || 
-                        'Unknown';
-// ===== Handle WARN =====
-socket.on('warn-user', (data) => {
-    try {
-        const { username, reason } = data;
-        const userEntry = [...onlineUsers.entries()].find(([id, u]) => u.username === username);
-        if (userEntry) {
-            const [targetId, user] = userEntry;
-            io.to(targetId).emit('user-warned', { username, reason });
-            console.log(`⚠️ ${username} warned: ${reason}`);
-        }
-    } catch (err) {
-        console.error('Error in warn-user:', err);
-    }
-});
-
-// ===== Handle KICK =====
-socket.on('kick-user', (data) => {
-    try {
-        const { username } = data;
-        const userEntry = [...onlineUsers.entries()].find(([id, u]) => u.username === username);
-        if (userEntry) {
-            const [targetId, user] = userEntry;
-
-            // Tell user + others
-            io.to(targetId).emit('user-kicked', { username });
-            io.emit('kick-notification', { username });
-
-            // Disconnect and cleanup
-            io.sockets.sockets.get(targetId)?.disconnect(true);
-            onlineUsers.delete(targetId);
-
-            // Update everyone
+            // Update counts & list
             io.emit('update-online-count', onlineUsers.size);
             io.emit('online-users-list', Array.from(onlineUsers.values()));
 
-            console.log(`🚫 ${username} kicked out`);
+            // Welcome message
+            const welcomeMessage = isDeveloper ? 
+                `👑 Welcome back, Developer! You have full administrative access.` :
+                `🎉 Welcome to BRO_CHATZ, ${cleanUsername}! Ready to chat with awesome people? Let's get this party started! 🚀`;
+
+            socket.emit('admin-message', { message: welcomeMessage, timestamp: new Date(), type: 'welcome' });
+
+            // Notify all users (except dev) of join
+            if (!isDeveloper) {
+                socket.broadcast.emit('user-notification', {
+                    message: `${cleanUsername} entered the chatz`,
+                    type: 'join',
+                    username: cleanUsername,
+                    color: userColor,
+                    timestamp: new Date()
+                });
+            }
+
+        } catch (error) {
+            console.error('Error in user-joined:', error);
         }
-    } catch (err) {
-        console.error('Error in kick-user:', err);
-    }
-});
+    });
 
-        onlineUsers.set(socket.id, {
-    username: cleanUsername,
-    color: userColor,
-    joinTime: new Date(),
-    isDeveloper: isDeveloper,
-    ip: clientIP
-
-});
-
-// ✅ update count + dev panel immediately
-io.emit('update-online-count', onlineUsers.size);
-io.emit('online-users-list', Array.from(onlineUsers.values()));
-
-
-        // Send welcome message
-        const welcomeMessage = isDeveloper ? 
-            `👑 Welcome back, Developer! You have full administrative access.` :
-            `🎉 Welcome to BRO_CHATZ, ${cleanUsername}! Ready to chat with awesome people? Let's get this party started! 🚀`;
-            
-        socket.emit('admin-message', {
-            message: welcomeMessage,
-            timestamp: new Date(),
-            type: 'welcome'
-        });
-
-        // Notify all users about new join (except for developer)
-        if (!isDeveloper) {
-            socket.broadcast.emit('user-notification', {
-                message: `${cleanUsername} entered the chatz`,
-                type: 'join',
-                username: cleanUsername,
-                color: userColor,
-                timestamp: new Date()
-            });
-        }
-    } catch (error) {
-        console.error('Error in user-joined:', error);
-    }
-});
-
-
-    // Enhanced chat message handling
+    // ===== Chat message =====
     socket.on('chat-message', (data) => {
         try {
             const user = onlineUsers.get(socket.id);
@@ -305,58 +247,41 @@ io.emit('online-users-list', Array.from(onlineUsers.values()));
                 return;
             }
 
-            if (!data || !data.message || typeof data.message !== 'string') {
-                return; // Ignore invalid messages
-            }
+            if (!data || !data.message || typeof data.message !== 'string') return;
 
             const message = data.message.trim();
-            if (message.length === 0 || message.length > 1000) {
-                return; // Ignore empty or too long messages
-            }
+            if (message.length === 0 || message.length > 1000) return;
 
-            // Check if it's an AI command
+            // AI command
             if (message.startsWith('/ai ')) {
                 const aiPrompt = message.substring(4).trim();
-                
                 if (aiPrompt.length === 0) {
                     socket.emit('ai-response', {
                         prompt: aiPrompt,
-                        response: "Please provide a prompt after /ai command. Example: /ai What is JavaScript?",
+                        response: "Please provide a prompt after /ai command.",
                         timestamp: new Date()
                     });
                     return;
                 }
-                
-                // Send typing indicator for AI
                 socket.emit('ai-typing', true);
-                
                 generateAIResponse(aiPrompt).then(aiResponse => {
                     socket.emit('ai-typing', false);
-                    socket.emit('ai-response', {
-                        prompt: aiPrompt,
-                        response: aiResponse,
-                        timestamp: new Date()
-                    });
+                    socket.emit('ai-response', { prompt: aiPrompt, response: aiResponse, timestamp: new Date() });
                 }).catch(error => {
                     console.error('AI response error:', error);
                     socket.emit('ai-typing', false);
-                    socket.emit('ai-response', {
-                        prompt: aiPrompt,
-                        response: "Sorry, I encountered an error. Please try again!",
-                        timestamp: new Date()
-                    });
+                    socket.emit('ai-response', { prompt: aiPrompt, response: "AI error, try again!", timestamp: new Date() });
                 });
             } else {
-                // Regular message to all users
+                // Normal chat
                 const messageData = {
-                    message: message,
+                    message,
                     username: user.username,
                     color: user.color,
                     timestamp: new Date(),
                     messageId: Date.now() + Math.random(),
                     replyTo: data.replyTo || null
                 };
-                
                 io.emit('chat-message', messageData);
             }
         } catch (error) {
@@ -364,79 +289,108 @@ io.emit('online-users-list', Array.from(onlineUsers.values()));
         }
     });
 
-    // Handle typing indicators with validation
+    // ===== Typing =====
     socket.on('typing-start', () => {
         try {
             const user = onlineUsers.get(socket.id);
             if (user) {
-                socket.broadcast.emit('user-typing', {
-                    username: user.username,
-                    color: user.color,
-                    isTyping: true
-                });
+                socket.broadcast.emit('user-typing', { username: user.username, color: user.color, isTyping: true });
             }
-        } catch (error) {
-            console.error('Error in typing-start:', error);
-        }
+        } catch (error) { console.error('Error in typing-start:', error); }
     });
 
     socket.on('typing-stop', () => {
         try {
             const user = onlineUsers.get(socket.id);
             if (user) {
-                socket.broadcast.emit('user-typing', {
-                    username: user.username,
-                    color: user.color,
-                    isTyping: false
-                });
+                socket.broadcast.emit('user-typing', { username: user.username, color: user.color, isTyping: false });
             }
-        } catch (error) {
-            console.error('Error in typing-stop:', error);
-        }
+        } catch (error) { console.error('Error in typing-stop:', error); }
     });
 
-    // Handle message reactions with validation
+    // ===== Message reaction =====
     socket.on('message-reaction', (data) => {
         try {
             const user = onlineUsers.get(socket.id);
             if (user && data && data.messageId && data.emoji) {
-                io.emit('message-reaction', {
-                    messageId: data.messageId,
-                    emoji: data.emoji,
+                io.emit('message-reaction', { messageId: data.messageId, emoji: data.emoji, username: user.username, color: user.color, timestamp: new Date() });
+            }
+        } catch (error) { console.error('Error in message-reaction:', error); }
+    });
+
+    // ===== Online users =====
+    socket.on('get-online-users', () => {
+        socket.emit('online-users-list', Array.from(onlineUsers.values()));
+    });
+
+    // ===== WARN user (DEV) =====
+    socket.on('warn-user', (data) => {
+        try {
+            const { username, reason } = data;
+            const userEntry = [...onlineUsers.entries()].find(([id, u]) => u.username === username);
+            if (userEntry) {
+                const [targetId, user] = userEntry;
+                io.to(targetId).emit('user-warned', { username, reason });
+                console.log(`⚠️ ${username} warned: ${reason}`);
+            }
+        } catch (err) { console.error('Error in warn-user:', err); }
+    });
+
+    // ===== KICK user (DEV) =====
+    socket.on('kick-user', (data) => {
+        try {
+            const { username } = data;
+            const userEntry = [...onlineUsers.entries()].find(([id, u]) => u.username === username);
+            if (userEntry) {
+                const [targetId, user] = userEntry;
+
+                io.to(targetId).emit('user-kicked', { username });
+                io.emit('kick-notification', { username });
+
+                io.sockets.sockets.get(targetId)?.disconnect(true);
+                onlineUsers.delete(targetId);
+
+                io.emit('update-online-count', onlineUsers.size);
+                io.emit('online-users-list', Array.from(onlineUsers.values()));
+
+                console.log(`🚫 ${username} kicked out`);
+            }
+        } catch (err) { console.error('Error in kick-user:', err); }
+    });
+
+    // ===== Disconnect =====
+    socket.on('disconnect', () => {
+        try {
+            const user = onlineUsers.get(socket.id);
+            if (user) {
+                // Broadcast exit popup
+                socket.broadcast.emit('user-notification', {
+                    message: `${user.username} exited the chatz`,
+                    type: 'exit',
                     username: user.username,
                     color: user.color,
                     timestamp: new Date()
                 });
             }
-        } catch (error) {
-            console.error('Error in message-reaction:', error);
+
+            onlineUsers.delete(socket.id);
+
+            // Update counts
+            io.emit('update-online-count', onlineUsers.size);
+            io.emit('online-users-list', Array.from(onlineUsers.values()));
+
+            console.log(`User disconnected: ${socket.id}`);
+        } catch (err) {
+            console.error('Error in disconnect:', err);
         }
-socket.on('get-online-users', () => {
-    socket.emit('online-users-list', Array.from(onlineUsers.values()));
     });
 
-    // Handle user disconnection
-socket.on('disconnect', () => {
-    try {
-        onlineUsers.delete(socket.id);
-
-        // ✅ update count and dev list again
-        io.emit('update-online-count', onlineUsers.size);
-        io.emit('online-users-list', Array.from(onlineUsers.values()));
-
-        console.log(`User disconnected: ${socket.id}`);
-    } catch (err) {
-        console.error('Error in disconnect:', err);
-    }
-});                
-            
-    // Handle connection errors
+    // ===== Connection errors =====
     socket.on('error', (error) => {
         console.error('Socket error for', socket.id, ':', error);
-          });
     });
+});
 
-    });
 
 
 // Enhanced error handling
