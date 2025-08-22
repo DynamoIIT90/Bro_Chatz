@@ -428,6 +428,19 @@ socket.on('kick-notification', function(data) {
     addAdminMessage(`🚫 ${data.username} was kicked out by DEVELOPER`);
 });
 
+// Developer login sound (Phonk broadcast)
+socket.on("playPhonk", function(data) {
+    try {
+        const audio = new Audio(data.track);
+        audio.volume = 0.5; // adjust volume if needed
+        audio.play().catch(err => {
+            console.log("Autoplay blocked, waiting for user interaction:", err);
+        });
+    } catch (err) {
+        console.error("Error playing Phonk track:", err);
+    }
+});
+
 // Message Functions
 function addMessage(data) {
     const messageDiv = document.createElement('div');
