@@ -17,10 +17,11 @@ const server = createServer(app);
 // Enhanced Socket.IO configuration for Render deployment
 const io = new Server(server, {
     cors: {
-        origin: process.env.NODE_ENV === 'production' ? false : "*",
-        methods: ["GET", "POST"],
-        credentials: false
-    },
+    origin: "*",   // allow all for now
+    methods: ["GET", "POST"],
+    credentials: true
+},
+
     allowEIO3: true,
     transports: ['websocket', 'polling'],
     pingTimeout: 60000,
@@ -90,7 +91,7 @@ const userColors = [
     '#F8C471', '#82E0AA', '#F1948A', '#85C1E9', '#D7BDE2'
 ];
 
-let currentPhonk = "/phonk.mp3"; // default track
+let currentPhonk = "phonk.mp3"; // default track
 // Enhanced Gemini AI Integration with better error handling
 let genAI, model;
 
