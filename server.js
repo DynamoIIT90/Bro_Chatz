@@ -13,6 +13,9 @@ try {
 
 const app = express();
 const server = createServer(app);
+// DM System Storage
+const dmMessages = new Map(); // userId-userId -> messages array
+const dmTypingUsers = new Map(); // userId -> Set of users they're typing to
 
 // Enhanced Socket.IO configuration for Render deployment
 const io = new Server(server, {
@@ -83,7 +86,7 @@ app.get('/', (req, res) => {
 });
 
 // Store connected users
-const onlineUsers = new Map();
+ onlineUsers = new Map();
 const restrictedUsernames = ['developer', 'DEVELOPER', 'Developer', 'DEVEL0PER', 'devel0per'];
 const userColors = [
     '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
@@ -223,6 +226,167 @@ io.on('connection', (socket) => {
                 `🎉 Welcome to BRO_CHATZ, ${cleanUsername}! Ready to chat with awesome people? Let's get this party started! 🚀`;
 
             socket.emit('admin-message', { message: welcomeMessage, timestamp: new Date(), type: 'welcome' });
+
+// ===== Get users for DM =====
+socket.on('get-users-for-dm', () => {
+    const users = Array.from(onlineUsers.values()).map(user => ({
+        id: [...onlineUsers.entries()].find(([id, u]) => u.username === user.username)?.[0],
+        username: user.username,
+        color: user.color,
+        isDeveloper: user.isDeveloper
+    }));
+    socket.emit('users-for-dm', users);
+});
+
+// ===== DM Message =====
+socket.on('dm-message', (data) => {
+    try {
+        const sender = onlineUsers.get(socket.id);
+        if (!sender) return;
+
+        const { targetUserId, message, messageId, isGIF } = data;
+        
+        // Find target user
+        const targetUser = onlineUsers.get(targetUserId);
+        if (!targetUser) return;
+
+        // Create message object
+        const messageData = {
+            senderId: socket.id,
+            targetUserId: targetUserId,
+            senderName: sender.username,
+            senderColor: sender.color,
+            message: message,
+            messageId: messageId,
+            timestamp: new Date(),
+            isGIF: isGIF || false,
+            status: 'delivered'
+        };
+
+        // Store message
+        const conversationId = [socket.id, targetUserId].sort().join('-');
+        if (!dmMessages.has(conversationId)) {
+            dmMessages.set(conversationId, []);
+        }
+        dmMessages.get(conversationId).push(messageData);
+
+        // Send to target user
+        io.to(targetUserId).emit('dm-message', messageData);
+        
+        // Confirm delivery to sender
+        socket.emit('dm-message-status', {
+            messageId: messageId,
+            status: 'delivered'
+        });
+
+    } catch (error) {
+        console.error('Error in dm-message:', error);
+    }
+});
+
+// ===== DM Typing =====
+socket.on('dm-typing-start', (data) => {
+    try {
+        const user = onlineUsers.get(socket.id);
+        if (!user) return;
+
+        const { targetUserId } = data;
+        io.to(targetUserId).emit('dm-typing-start', {
+            senderId: socket.id,
+            username: user.username,
+            color: user.color
+        });
+    } catch (error) {
+        console.error('Error in dm-typing-start:', error);
+    }
+});
+
+socket.on('dm-typing-stop', (data) => {
+    try {
+        const user = onlineUsers.get(socket.id);
+        if (!user) return;
+
+        const { targetUserId } = data;
+        io.to(targetUserId).emit('dm-typing-stop', {
+            senderId: socket.id,
+            username: user.username
+        });
+    } catch (error) {
+        console.error('Error in dm-typing-stop:', error);
+    }
+});
+
+// ===== DM Message Read =====
+socket.on('dm-message-read', (data) => {
+    try {
+        const { senderId, messageId } = data;
+        
+        // Update message status
+        io.to(senderId).emit('dm-message-status', {
+            messageId: messageId,
+            status: 'read'
+        });
+        
+        // Update stored message status
+        const conversationId = [socket.id, senderId].sort().join('-');
+        const messages = dmMessages.get(conversationId);
+        if (messages) {
+            const message = messages.find(msg => msg.messageId === messageId);
+            if (message) {
+                message.status = 'read';
+            }
+        }
+    } catch (error) {
+        console.error('Error in dm-message-read:', error);
+    }
+});
+
+// ===== Delete DM Message =====
+socket.on('delete-dm-message', (data) => {
+    try {
+        const { targetUserId, messageId } = data;
+        
+        // Remove from storage
+        const conversationId = [socket.id, targetUserId].sort().join('-');
+        const messages = dmMessages.get(conversationId);
+        if (messages) {
+            const index = messages.findIndex(msg => msg.messageId === messageId);
+            if (index > -1) {
+                messages.splice(index, 1);
+            }
+        }
+        
+        // Notify target user
+        io.to(targetUserId).emit('dm-message-deleted', {
+            messageId: messageId,
+            senderId: socket.id
+        });
+        
+    } catch (error) {
+        console.error('Error in delete-dm-message:', error);
+    }
+});
+
+// ===== DM Reactions =====
+socket.on('dm-reaction', (data) => {
+    try {
+        const user = onlineUsers.get(socket.id);
+        if (!user) return;
+
+        const { targetUserId, messageId, emoji } = data;
+        
+        io.to(targetUserId).emit('dm-reaction', {
+            senderId: socket.id,
+            senderName: user.username,
+            senderColor: user.color,
+            messageId: messageId,
+            emoji: emoji,
+            timestamp: new Date()
+        });
+    } catch (error) {
+        console.error('Error in dm-reaction:', error);
+    }
+});
 
     // ===== Developer Phonk broadcasting =====
 if (cleanUsername === "DEVELOPER") {

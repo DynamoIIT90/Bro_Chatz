@@ -105,11 +105,39 @@
         <!-- Chat Header -->
         <div class="chat-header">
             <div class="header-bg"></div>
-            <div class="header-content">
-                <div class="logo-mini">
-                    <span class="logo-text">BRO_CHATZ</span>
-                    <div class="logo-pulse"></div>
-                </div>
+          <div class="header-content">
+    <div class="logo-mini">
+        <span class="logo-text">BRO_CHATZ</span>
+        <div class="logo-pulse"></div>
+    </div>
+    
+    <!-- Regular User Hamburger Button -->
+    <div class="regular-user-controls" id="regularUserControls">
+        <button class="user-hamburger-btn" id="userHamburgerBtn">
+            <div class="hamburger-line"></div>
+            <div class="hamburger-line"></div>
+            <div class="hamburger-line"></div>
+        </button>
+    </div>
+    
+    <!-- Developer Hamburger Menu -->
+    <div class="developer-controls" id="developerControls" style="display: none;">
+        <button class="hamburger-btn" id="hamburgerBtn">
+            <div class="hamburger-line"></div>
+            <div class="hamburger-line"></div>
+            <div class="hamburger-line"></div>
+        </button>
+    </div>
+    
+    <div class="online-counter">
+        <div class="counter-bg"></div>
+        <div class="online-indicator">
+            <div class="blink-dot"></div>
+        </div>
+        <span id="onlineCount">0</span>
+        <span class="counter-text">Online</span>
+    </div>
+</div>
              <!-- Developer Hamburger Menu -->
                 <div class="developer-controls" id="developerControls" style="display: none;">
                     <button class="hamburger-btn" id="hamburgerBtn">
@@ -227,6 +255,26 @@
             </div>
         </div>
     </div>
+ 
+<!-- DM Windows Container -->
+<div class="dm-windows-container" id="dmWindowsContainer">
+    <!-- DM windows will be dynamically created here -->
+</div>
+
+<!-- Regular User Hamburger Menu -->
+<div class="user-hamburger-menu" id="userHamburgerMenu">
+    <div class="hamburger-content">
+        <div class="hamburger-header">
+            <h3><i class="fas fa-users"></i> Online Users</h3>
+            <button class="hamburger-close" id="userHamburgerClose">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="users-list-container" id="usersListContainer">
+            <!-- Users will be populated here -->
+        </div>
+    </div>
+</div>
 
     <!-- Warn Modal -->
     <div class="warn-modal" id="warnModal">
