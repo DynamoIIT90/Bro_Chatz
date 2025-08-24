@@ -33,6 +33,146 @@ function getCurrentDMUserId() {
     const activeWindow = document.querySelector('.dm-window.active');
     return activeWindow ? activeWindow.dataset.userid : null;
 }
+// ================= CYBERPUNK THEME SYSTEM =================
+
+let currentTheme = 'default';
+
+function initializeTheme() {
+    const savedTheme = localStorage.getItem('brochatz-theme') || 'default';
+    const themeIcon = document.getElementById('themeIcon');
+    const body = document.body;
+    
+    currentTheme = savedTheme;
+    
+    if (savedTheme === 'cyberpunk') {
+        body.setAttribute('data-theme', 'cyberpunk');
+        themeIcon.className = 'fas fa-moon theme-icon';
+    } else {
+        body.removeAttribute('data-theme');
+        themeIcon.className = 'fas fa-sun theme-icon';
+    }
+}
+
+function toggleTheme() {
+    const themeIcon = document.getElementById('themeIcon');
+    const body = document.body;
+    
+    if (currentTheme === 'default') {
+        // Activate Cyberpunk Mode
+        currentTheme = 'cyberpunk';
+        body.setAttribute('data-theme', 'cyberpunk');
+        themeIcon.className = 'fas fa-moon theme-icon';
+        localStorage.setItem('brochatz-theme', 'cyberpunk');
+        
+        showThemeActivation('CYBERPUNK MODE ACTIVATED', 'cyberpunk');
+        
+    } else {
+        // Activate Default Mode  
+        currentTheme = 'default';
+        body.removeAttribute('data-theme');
+        themeIcon.className = 'fas fa-sun theme-icon';
+        localStorage.setItem('brochatz-theme', 'default');
+        
+        showThemeActivation('RGB MODE ACTIVATED', 'default');
+    }
+}
+
+function showThemeActivation(message, theme) {
+    const activation = document.createElement('div');
+    activation.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: ${theme === 'cyberpunk' ? 
+            'linear-gradient(45deg, #ff00ff, #00ffff, #00ff41)' : 
+            'linear-gradient(45deg, #ff006e, #3a86ff, #00ff88)'
+        };
+        color: ${theme === 'cyberpunk' ? '#0a0a0f' : '#ffffff'};
+        padding: 25px 50px;
+        border-radius: 15px;
+        font-family: 'Orbitron', monospace;
+        font-weight: bold;
+        font-size: 1.4rem;
+        z-index: 10000;
+        animation: themeActivation 2.5s ease-out forwards;
+        pointer-events: none;
+        backdrop-filter: blur(20px);
+        border: 2px solid ${theme === 'cyberpunk' ? '#ff00ff' : 'rgba(255,255,255,0.3)'};
+        box-shadow: 0 0 50px ${theme === 'cyberpunk' ? 'rgba(255,0,255,0.8)' : 'rgba(255,255,255,0.4)'};
+        text-shadow: ${theme === 'cyberpunk' ? '0 0 10px #0a0a0f' : 'none'};
+    `;
+    activation.textContent = message;
+    document.body.appendChild(activation);
+    
+    // Create particles effect
+    createThemeParticles(theme);
+    
+    setTimeout(() => {
+        activation.remove();
+    }, 2500);
+}
+
+function createThemeParticles(theme) {
+    const colors = theme === 'cyberpunk' ? 
+        ['#ff00ff', '#00ffff', '#00ff41', '#ff6600'] : 
+        ['#ff006e', '#3a86ff', '#00ff88', '#ffbe0b'];
+    
+    for (let i = 0; i < 20; i++) {
+        setTimeout(() => {
+            const particle = document.createElement('div');
+            particle.style.cssText = `
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                width: 8px;
+                height: 8px;
+                background: ${colors[Math.floor(Math.random() * colors.length)]};
+                border-radius: 50%;
+                pointer-events: none;
+                z-index: 9999;
+                animation: particleExplosion 1.5s ease-out forwards;
+                transform: translate(-50%, -50%);
+                box-shadow: 0 0 10px currentColor;
+            `;
+            
+            const angle = (360 / 20) * i;
+            const distance = 200 + Math.random() * 100;
+            
+            particle.style.setProperty('--angle', angle + 'deg');
+            particle.style.setProperty('--distance', distance + 'px');
+            
+            document.body.appendChild(particle);
+            
+            setTimeout(() => particle.remove(), 1500);
+        }, i * 50);
+    }
+}
+
+// Add particle explosion animation
+const particleStyle = document.createElement('style');
+particleStyle.textContent = `
+    @keyframes particleExplosion {
+        0% { 
+            opacity: 1; 
+            transform: translate(-50%, -50%) rotate(var(--angle)) translateY(0) scale(1); 
+        }
+        100% { 
+            opacity: 0; 
+            transform: translate(-50%, -50%) rotate(var(--angle)) translateY(calc(-1 * var(--distance))) scale(0); 
+        }
+    }
+`;
+document.head.appendChild(particleStyle);
+
+// Initialize theme on load and add event listener
+document.addEventListener('DOMContentLoaded', function() {
+    initializeTheme();
+    
+    // Theme toggle event
+    document.getElementById('themeToggleBtn').addEventListener('click', toggleTheme);
+});
+
 let isTyping = false;
 let selectedMessage = null;
 let replyingTo = null;
@@ -45,6 +185,7 @@ phonkAudio.loop = false;
 document.addEventListener('DOMContentLoaded', function() {
     createParticleField();
     initializeEventListeners();
+
     
     // Auto-resize textarea
     messageInput.addEventListener('input', function() {
@@ -214,6 +355,7 @@ function initializeEventListeners() {
     });
 
     sendBtn.addEventListener('click', sendMessage);
+
 
     // AI Modal Events
     aiCloseBtn.addEventListener('click', closeAIModal);
@@ -969,14 +1111,14 @@ function createScrollParticle() {
 }
 
 // Add final particle animation
-const particleStyle = document.createElement('style');
-particleStyle.textContent = `
+const particleFadeStyle = document.createElement('style');
+particleFadeStyle.textContent = `
     @keyframes particleFade {
         0% { opacity: 1; transform: translateX(0); }
         100% { opacity: 0; transform: translateX(-50px); }
     }
 `;
-document.head.appendChild(particleStyle);
+document.head.appendChild(particleFadeStyle);
 
 // Add some final polish effects
 document.addEventListener('mousemove', function(e) {
