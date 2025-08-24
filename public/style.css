@@ -2704,6 +2704,35 @@ html, body {
     flex-direction: column !important;
     z-index: 3000 !important;
 }
+/* Make sure typing indicator always sits just above input bar */
+.typing-indicators {
+  position: relative;
+  bottom: auto;
+  margin: 6px 12px;     /* slightly larger margin for mobile */
+  font-size: 0.9em;
+  color: gray;
+  z-index: 10;          /* ensure it's above input effects */
+}
+
+.dm-messages {
+  overflow-y: auto;   /* allow scrolling */
+  overflow-x: hidden; /* prevent sideways scroll */
+}
+
+#reactionPicker {
+  position: fixed;    /* float above all windows */
+  z-index: 9999;      /* ensure it’s always visible */
+}
+
+
+
+/* Mobile-specific adjustments */
+@media (max-width: 768px) {
+  .typing-indicators {
+    margin-bottom: 60px;   /* push it above the fixed input bar */
+  }
+}
+
 
 }
 

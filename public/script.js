@@ -396,32 +396,35 @@ function initializeEventListeners() {
     });
 
     // Reaction picker events
-    document.querySelectorAll('.reaction-emoji').forEach(emoji => {
-        emoji.addEventListener('click', function() {
-            if (selectedMessage) {
-                const emojiValue = this.dataset.emoji;
-                addReactionAnimation(this);
-                
-                // Check if it's a DM reaction
-                if (reactionPicker.dataset.dmUserId) {
-                    const dmUserId = reactionPicker.dataset.dmUserId;
-                    socket.emit('dm-reaction', {
-                        targetUserId: dmUserId,
-                        messageId: selectedMessage.dataset.messageId,
-                        emoji: emojiValue
-                    });
-                    delete reactionPicker.dataset.dmUserId;
-                } else {
-                    // Global chat reaction
-                    socket.emit('message-reaction', {
-                        messageId: selectedMessage.dataset.messageId,
-                        emoji: emojiValue
-                    });
-                }
-                hideReactionPicker();
-            }
-        });
+document.querySelectorAll('.reaction-emoji').forEach(emoji => {
+    emoji.addEventListener('click', function() {
+        if (!selectedMessage) return;
+
+        const emojiValue = this.dataset.emoji;
+        addReactionAnimation(this);
+
+        // 👇 Check where the message lives
+        if (selectedMessage.closest('.dm-messages')) {
+            // DM message
+            const dmContainer = selectedMessage.closest('.dm-messages');
+            const dmUserId = dmContainer.getAttribute('data-userid');
+
+            socket.emit('dm-reaction', {
+                targetUserId: dmUserId,
+                messageId: selectedMessage.dataset.messageId,
+                emoji: emojiValue
+            });
+        } else {
+            // Global chat
+            socket.emit('message-reaction', {
+                messageId: selectedMessage.dataset.messageId,
+                emoji: emojiValue
+            });
+        }
+
+        hideReactionPicker();
     });
+});
 
     document.getElementById('replyBtn').addEventListener('click', function() {
         if (selectedMessage) {
@@ -566,6 +569,19 @@ socket.on('message-reaction', function(data) {
     }
 });
 
+socket.on('dm-reaction', data => {
+    // Find the DM message
+    const dmMessages = document.querySelector(`#dmMessages-${data.targetUserId}`);
+    if (!dmMessages) return;
+
+    const messageEl = dmMessages.querySelector(`[data-message-id="${data.messageId}"]`);
+    if (!messageEl) return;
+
+    // Add the reaction
+    addReactionToElement(messageEl, data.emoji);
+});
+
+
 socket.on('ai-response', function(data) {
     hideAITyping();
     addAIMessage(data.response, 'bot');
@@ -605,26 +621,29 @@ socket.on('users-for-dm', function(users) {
     displayUsersForDM(users);
 });
 
+// DM message handler
 socket.on('dm-message', function(data) {
-    // Always add message to DM window (creates if not exists)
-    addDMMessageToWindow(data.senderId, {
+    const messageData = {
         ...data,
         isOwn: false,
         status: 'delivered'
-    });
+    };
 
-    // If DM window with this sender is already open → mark as read
-    if (openDMWindows.has(data.senderId) && getCurrentDMUserId() === data.senderId) {
-        socket.emit('dm-message-read', { 
-            senderId: data.senderId, 
-            messageId: data.messageId 
-        });
+    // ✅ Always store in memory, even if window is closed
+    if (!dmMessages.has(data.senderId)) {
+        dmMessages.set(data.senderId, []);
+    }
+    dmMessages.get(data.senderId).push(messageData);
+
+    // ✅ If window is open → render immediately
+    if (openDMWindows.has(data.senderId)) {
+        addDMMessageToWindow(data.senderId, messageData);
     } else {
-        // User is OUTSIDE this DM → show popup
+        // Otherwise just notify
         showDMNotificationPopup(data.senderName, data.message);
     }
 
-    // Play sound
+    // ✅ Play sound for every new DM
     playMessageSound();
 });
 
