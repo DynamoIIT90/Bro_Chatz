@@ -23,6 +23,16 @@ const loadingScreen = document.getElementById('loadingScreen');
 let currentUser = null;
 let userColor = '#ffffff';
 let typingTimer = null;
+// DM System Variables
+let openDMWindows = new Map(); // userId -> window element
+let dmMessages = new Map(); // userId -> messages array
+let dmTypingUsers = new Map(); // userId -> typing status
+let dmWindowZIndex = 1600;
+function getCurrentDMUserId() {
+    // returns the userId of the currently active DM window, or null
+    const activeWindow = document.querySelector('.dm-window.active');
+    return activeWindow ? activeWindow.dataset.userid : null;
+}
 let isTyping = false;
 let selectedMessage = null;
 let replyingTo = null;
@@ -30,10 +40,6 @@ let isDeveloper = false;
 let onlineUsers = new Map();
 let phonkAudio = new Audio();
 phonkAudio.loop = false;
-
-
-
-
 
 // Initialize App
 document.addEventListener('DOMContentLoaded', function() {
@@ -92,7 +98,8 @@ function initializeEventListeners() {
             startChatBtn.classList.remove('ready');
         }
     });
-// Elite Mode Events
+
+    // Elite Mode Events
     const developerUsername = document.getElementById('developerUsername');
     const developerPassword = document.getElementById('developerPassword');
     const eliteLoginBtn = document.getElementById('eliteLoginBtn');
@@ -108,36 +115,36 @@ function initializeEventListeners() {
     developerPassword.addEventListener('input', checkEliteCredentials);
 
     eliteLoginBtn.addEventListener('click', function() {
-    const username = developerUsername.value.trim();
-    const password = developerPassword.value.trim();
-    
-    if (username.toLowerCase() === 'developer' && password === 'vivekisgod8085') {
-        isDeveloper = true;
-        currentUser = 'DEVELOPER';
-        startChat();
+        const username = developerUsername.value.trim();
+        const password = developerPassword.value.trim();
+        
+        if (username.toLowerCase() === 'developer' && password === 'vivekisgod8085') {
+            isDeveloper = true;
+            currentUser = 'DEVELOPER';
+            startChat();
 
-        // Play Phonk track once per session
-        if (!sessionStorage.getItem('phonkPlayed')) {
-            phonkAudio.src = 'phonk.mp3'; // <-- replace with actual path
-            phonkAudio.play().catch(err => console.log('Audio play blocked:', err));
-            
-            phonkAudio.onended = () => {
-                phonkAudio.src = ''; // unload track
-            };
-            
-            sessionStorage.setItem('phonkPlayed', 'true'); // mark as played
+            // Play Phonk track once per session
+            if (!sessionStorage.getItem('phonkPlayed')) {
+                phonkAudio.src = 'phonk.mp3'; // <-- replace with actual path
+                phonkAudio.play().catch(err => console.log('Audio play blocked:', err));
+                
+                phonkAudio.onended = () => {
+                    phonkAudio.src = ''; // unload track
+                };
+                
+                sessionStorage.setItem('phonkPlayed', 'true'); // mark as played
+            }
+        } else {
+            alert('Invalid developer credentials!');
         }
-    } else {
-        alert('Invalid developer credentials!');
-    }
-});
+    });
 
-eliteLoginBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  developerPassword.addEventListener('keypress', function(e) {
-    if (e.key === 'Enter' && !eliteLoginBtn.disabled) {
-        eliteLoginBtn.click();
-    }
-});
+    eliteLoginBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    developerPassword.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter' && !eliteLoginBtn.disabled) {
+            eliteLoginBtn.click();
+        }
+    });
 
     // Developer Panel Events
     const hamburgerBtn = document.getElementById('hamburgerBtn');
@@ -173,7 +180,6 @@ eliteLoginBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
         } else {
             alert('Please enter a warning reason!');
         }
-    
     });
 
     usernameInput.addEventListener('keypress', function(e) {
@@ -253,10 +259,23 @@ eliteLoginBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
             if (selectedMessage) {
                 const emojiValue = this.dataset.emoji;
                 addReactionAnimation(this);
-                socket.emit('message-reaction', {
-                    messageId: selectedMessage.dataset.messageId,
-                    emoji: emojiValue
-                });
+                
+                // Check if it's a DM reaction
+                if (reactionPicker.dataset.dmUserId) {
+                    const dmUserId = reactionPicker.dataset.dmUserId;
+                    socket.emit('dm-reaction', {
+                        targetUserId: dmUserId,
+                        messageId: selectedMessage.dataset.messageId,
+                        emoji: emojiValue
+                    });
+                    delete reactionPicker.dataset.dmUserId;
+                } else {
+                    // Global chat reaction
+                    socket.emit('message-reaction', {
+                        messageId: selectedMessage.dataset.messageId,
+                        emoji: emojiValue
+                    });
+                }
                 hideReactionPicker();
             }
         });
@@ -264,11 +283,19 @@ eliteLoginBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
     document.getElementById('replyBtn').addEventListener('click', function() {
         if (selectedMessage) {
-            startReply(selectedMessage);
+            if (reactionPicker.dataset.dmUserId) {
+                // DM reply functionality can be added here
+                console.log('DM reply functionality');
+                delete reactionPicker.dataset.dmUserId;
+            } else {
+                // Global chat reply
+                startReply(selectedMessage);
+            }
             hideReactionPicker();
         }
     });
 }
+
 // Start Chat Function
 function startChat() {
     let username;
@@ -281,18 +308,20 @@ function startChat() {
     }
 
     currentUser = username;
-    // Developer Phonk — play once per browser session
-if (currentUser === "DEVELOPER" && !sessionStorage.getItem('phonkPlayed')) {
-    const phonkAudio = new Audio('phonk.mp3'); // file path relative to public folder
-    phonkAudio.volume = 0.5; // optional volume
-    phonkAudio.play().catch(() => {
-        console.log('Autoplay blocked, will play after user interaction');
-    });
-    phonkAudio.addEventListener('ended', () => {
-        console.log('Phonk finished playing');
-    });
-    sessionStorage.setItem('phonkPlayed', 'true');
-}
+    // Initialize DM system
+    initializeDMSystem();
+    // Developer Phonk â€" play once per browser session
+    if (currentUser === "DEVELOPER" && !sessionStorage.getItem('phonkPlayed')) {
+        const phonkAudio = new Audio('phonk.mp3'); // file path relative to public folder
+        phonkAudio.volume = 0.5; // optional volume
+        phonkAudio.play().catch(() => {
+            console.log('Autoplay blocked, will play after user interaction');
+        });
+        phonkAudio.addEventListener('ended', () => {
+            console.log('Phonk finished playing');
+        });
+        sessionStorage.setItem('phonkPlayed', 'true');
+    }
 
     // Show loading screen
     showLoadingScreen();
@@ -304,10 +333,10 @@ if (currentUser === "DEVELOPER" && !sessionStorage.getItem('phonkPlayed')) {
         // Connect to socket
         socket.emit('user-joined', { username: username, isDeveloper: isDeveloper });
 
-// Show developer controls if developer
-if (isDeveloper) {
-    document.getElementById('developerControls').style.display = 'block';
-}
+        // Show developer controls if developer
+        if (isDeveloper) {
+            document.getElementById('developerControls').style.display = 'block';
+        }
         
         // Transition to chat screen
         setTimeout(() => {
@@ -407,6 +436,7 @@ socket.on('ai-typing', function(isTyping) {
         hideAITyping();
     }
 });
+
 socket.on('online-users-list', function(users) {
     displayOnlineUsers(users);
 });
@@ -420,12 +450,72 @@ socket.on('user-kicked', function(data) {
 
 socket.on('user-warned', function(data) {
     if (data.username === currentUser) {
-        alert(`⚠️ WARNING: You are being warned for: ${data.reason}`);
+        alert(`âš ï¸ WARNING: You are being warned for: ${data.reason}`);
     }
 });
 
 socket.on('kick-notification', function(data) {
-    addAdminMessage(`🚫 ${data.username} was kicked out by DEVELOPER`);
+    addAdminMessage(`ðŸš« ${data.username} was kicked out by DEVELOPER`);
+});
+
+// DM Socket Events
+socket.on('users-for-dm', function(users) {
+    displayUsersForDM(users);
+});
+
+socket.on('dm-message', function(data) {
+    // Always add message to DM window (creates if not exists)
+    addDMMessageToWindow(data.senderId, {
+        ...data,
+        isOwn: false,
+        status: 'delivered'
+    });
+
+    // If DM window with this sender is already open → mark as read
+    if (openDMWindows.has(data.senderId) && getCurrentDMUserId() === data.senderId) {
+        socket.emit('dm-message-read', { 
+            senderId: data.senderId, 
+            messageId: data.messageId 
+        });
+    } else {
+        // User is OUTSIDE this DM → show popup
+        showDMNotificationPopup(data.senderName, data.message);
+    }
+
+    // Play sound
+    playMessageSound();
+});
+
+
+socket.on('dm-typing-start', function(data) {
+    showDMTypingIndicator(data.senderId, data.username, data.color);
+});
+
+socket.on('dm-typing-stop', function(data) {
+    hideDMTypingIndicator(data.senderId);
+});
+
+socket.on('dm-message-status', function(data) {
+    // Update message status (read/delivered)
+    const messageElement = document.querySelector(`[data-message-id="${data.messageId}"]`);
+    if (messageElement) {
+        const statusElement = messageElement.querySelector('.dm-message-status');
+        if (statusElement) {
+            const icon = data.status === 'read' ? 
+                '<i class="fas fa-check-double message-status-double"></i>' : 
+                '<i class="fas fa-check message-status-single"></i>';
+            statusElement.innerHTML = icon;
+        }
+    }
+});
+
+socket.on('dm-reaction', function(data) {
+    // Add reaction to DM message
+    const messageElement = document.querySelector(`[data-message-id="${data.messageId}"]`);
+    if (messageElement) {
+        // Add reaction display logic here (similar to global chat)
+        console.log('DM reaction received:', data);
+    }
 });
 
 // Developer login sound (Phonk broadcast)
@@ -503,7 +593,7 @@ function addAIMessage(message, type) {
     const messageDiv = document.createElement('div');
     messageDiv.className = `ai-chat-message ai-${type}-message`;
     
-    const avatar = type === 'user' ? '👤' : '🤖';
+    const avatar = type === 'user' ? '🗿' : '💎ᴠɪᴘ';
     
     messageDiv.innerHTML = `
         <div class="message-header">
@@ -564,7 +654,7 @@ function showAITyping() {
     typingDiv.className = 'ai-chat-message ai-bot-message ai-typing';
     typingDiv.innerHTML = `
         <div class="message-header">
-            <span>🤖 AI Assistant</span>
+            <span>ðŸ¤– AI Assistant</span>
         </div>
         <div class="typing-dots">
             <div class="typing-dot"></div>
@@ -681,7 +771,7 @@ function startReply(messageElement) {
                     ${messageContent.substring(0, 50)}${messageContent.length > 50 ? '...' : ''}
                 </div>
             </div>
-            <button onclick="clearReply()" style="background: none; border: none; color: rgba(255,255,255,0.5); cursor: pointer; font-size: 1.2rem;">×</button>
+            <button onclick="clearReply()" style="background: none; border: none; color: rgba(255,255,255,0.5); cursor: pointer; font-size: 1.2rem;">Ã—</button>
         </div>
     `;
     replyPreview.style.display = 'block';
@@ -698,7 +788,7 @@ function showUserNotification(data) {
     const notification = document.createElement('div');
     notification.className = `notification ${data.type}`;
     
-    const icon = data.type === 'join' ? '🎉' : '👋';
+    const icon = data.type === 'join' ? '֎' : '⚔️';
     
     notification.innerHTML = `
         <div class="notification-content">
@@ -735,6 +825,24 @@ function showReactionNotification(data) {
             notification.remove();
         }, 500);
     }, 2000);
+}
+
+// ================= DM POPUP NOTIFICATION =================
+function showDMNotificationPopup(from, message) {
+    const notification = document.createElement('div');
+    notification.className = 'notification';
+    notification.innerHTML = `
+        <div class="notification-content">
+            <strong style="color:#3a86ff">${from}</strong> sent: ${escapeHtml(message)}
+        </div>
+    `;
+
+    notificationContainer.appendChild(notification);
+
+    // Remove after 18 seconds
+    setTimeout(() => {
+        notification.remove();
+    }, 8000);
 }
 
 // Utility Functions
@@ -952,6 +1060,437 @@ function openWarnModal(username) {
 function closeWarnModal() {
     warnModal.style.display = 'none';
 }
+
+// DM System Functions
+function initializeDMSystem() {
+    const userHamburgerBtn = document.getElementById('userHamburgerBtn');
+    const userHamburgerMenu = document.getElementById('userHamburgerMenu');
+    const userHamburgerClose = document.getElementById('userHamburgerClose');
+
+    // Show regular user hamburger for everyone
+    document.getElementById('regularUserControls').style.display = 'block';
+
+    userHamburgerBtn.addEventListener('click', function() {
+        this.classList.toggle('active');
+        userHamburgerMenu.classList.toggle('open');
+        requestUsersList();
+    });
+
+    userHamburgerClose.addEventListener('click', function() {
+        userHamburgerBtn.classList.remove('active');
+        userHamburgerMenu.classList.remove('open');
+    });
+
+    // Click outside to close
+    document.addEventListener('click', function(e) {
+        if (!userHamburgerMenu.contains(e.target) && !userHamburgerBtn.contains(e.target)) {
+            userHamburgerBtn.classList.remove('active');
+            userHamburgerMenu.classList.remove('open');
+        }
+    });
+}
+
+function requestUsersList() {
+    socket.emit('get-users-for-dm');
+}
+
+function displayUsersForDM(users) {
+    const container = document.getElementById('usersListContainer');
+    container.innerHTML = '';
+
+    users.forEach(user => {
+        if (user.username !== currentUser) {
+            const userDiv = document.createElement('div');
+            userDiv.className = 'user-list-item';
+            userDiv.onclick = () => openDMWindow(user);
+
+            const firstLetter = user.username.charAt(0).toUpperCase();
+            
+            userDiv.innerHTML = `
+                <div class="user-list-avatar" style="background: ${user.color}">
+                    ${firstLetter}
+                </div>
+                <div class="user-list-info">
+                    <div class="user-list-name" style="color: ${user.color}">
+                        ${user.username}
+                        ${user.isDeveloper ? '<i class="fas fa-check-circle developer-badge" title="Verified Developer"></i>' : ''}
+                    </div>
+                    <div class="user-list-status">Click to message</div>
+                </div>
+            `;
+            container.appendChild(userDiv);
+        }
+    });
+}
+
+function openDMWindow(user) {
+    // Close hamburger menu
+    document.getElementById('userHamburgerBtn').classList.remove('active');
+    document.getElementById('userHamburgerMenu').classList.remove('open');
+
+    // Check if window already exists
+    if (openDMWindows.has(user.id)) {
+        const existingWindow = openDMWindows.get(user.id);
+        existingWindow.style.zIndex = dmWindowZIndex++;
+        return;
+    }
+
+    const dmWindow = document.createElement('div');
+    dmWindow.className = 'dm-window';
+    dmWindow.style.zIndex = dmWindowZIndex++;
+   
+
+    const firstLetter = user.username.charAt(0).toUpperCase();
+
+    dmWindow.innerHTML = `
+        <div class="dm-header">
+            <div class="dm-user-info">
+                <div class="dm-user-avatar" style="background: ${user.color}">
+                    ${firstLetter}
+                </div>
+                <div class="dm-user-name" style="color: ${user.color}">${user.username}</div>
+            </div>
+            <div class="dm-controls">
+                <button class="dm-home-btn" onclick="minimizeDMWindow('${user.id}')">
+                    <i class="fas fa-home"></i>
+                </button>
+                <button class="dm-close-btn" onclick="closeDMWindow('${user.id}')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+        <div class="dm-messages" id="dmMessages-${user.id}"></div>
+        <div class="dm-typing-indicator" id="dmTyping-${user.id}"></div>
+        <div class="dm-input-area">
+            <div class="dm-reply-preview-container" id="dmReply-${user.id}"></div>
+            <div class="dm-input-wrapper">
+                <button class="dm-emoji-btn" onclick="toggleDMEmojis('${user.id}')">
+                    <i class="fas fa-smile"></i>
+                </button>
+                <label class="gif-upload-btn" for="gifInput-${user.id}">
+                    <i class="fas fa-images"></i>
+                </label>
+                <input type="file" class="gif-input" id="gifInput-${user.id}" accept=".gif,image/*" onchange="handleGIFUpload('${user.id}', this)">
+                <textarea class="dm-input" id="dmInput-${user.id}" placeholder="Message ${user.username}..." rows="1" maxlength="500"></textarea>
+                <button class="dm-send-btn" onclick="sendDMMessage('${user.id}')">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+    `;
+
+    document.getElementById('dmWindowsContainer').appendChild(dmWindow);
+    openDMWindows.set(user.id, dmWindow);
+
+    // Setup DM input events
+    setupDMInputEvents(user.id);
+
+    // Load existing messages
+    loadDMMessages(user.id);
+}
+
+function setupDMInputEvents(userId) {
+    const input = document.getElementById(`dmInput-${userId}`);
+    let dmTypingTimer = null;
+    let isDMTyping = false;
+
+    // Auto-resize textarea
+    input.addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = Math.min(this.scrollHeight, 80) + 'px';
+
+        // Typing indicator
+        if (!isDMTyping && this.value.trim()) {
+            isDMTyping = true;
+            socket.emit('dm-typing-start', { targetUserId: userId });
+        }
+
+        clearTimeout(dmTypingTimer);
+        dmTypingTimer = setTimeout(() => {
+            if (isDMTyping) {
+                isDMTyping = false;
+                socket.emit('dm-typing-stop', { targetUserId: userId });
+            }
+        }, 3000);
+    });
+
+    // Enter to send
+    input.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendDMMessage(userId);
+        }
+    });
+
+    // Make window draggable
+    
+}
+
+function makeDMWindowDraggable(userId) {
+    const dmWindow = openDMWindows.get(userId);
+    const header = dmWindow.querySelector('.dm-header');
+    
+    let isDragging = false;
+    let currentX, currentY, initialX, initialY;
+
+    header.addEventListener('mousedown', function(e) {
+        if (e.target.closest('button')) return;
+        
+        isDragging = true;
+        dmWindow.style.zIndex = dmWindowZIndex++;
+        
+        initialX = e.clientX - dmWindow.offsetLeft;
+        initialY = e.clientY - dmWindow.offsetTop;
+    });
+
+    document.addEventListener('mousemove', function(e) {
+        if (!isDragging) return;
+        
+        currentX = e.clientX - initialX;
+        currentY = e.clientY - initialY;
+        
+        dmWindow.style.left = Math.max(0, Math.min(currentX, window.innerWidth - dmWindow.offsetWidth)) + 'px';
+        dmWindow.style.top = Math.max(0, Math.min(currentY, window.innerHeight - dmWindow.offsetHeight)) + 'px';
+    });
+
+    document.addEventListener('mouseup', function() {
+        isDragging = false;
+    });
+}
+
+function sendDMMessage(userId) {
+    const input = document.getElementById(`dmInput-${userId}`);
+    const message = input.value.trim();
+    
+    if (!message) return;
+
+    const messageData = {
+        targetUserId: userId,
+        message: message,
+        timestamp: new Date(),
+        messageId: Date.now() + Math.random()
+    };
+
+    socket.emit('dm-message', messageData);
+
+    // Add to local messages immediately
+    addDMMessageToWindow(userId, {
+        ...messageData,
+        sender: currentUser,
+        isOwn: true,
+        status: 'sent'
+    });
+
+    input.value = '';
+    input.style.height = 'auto';
+}
+
+function addDMMessageToWindow(userId, messageData) {
+    const messagesContainer = document.getElementById(`dmMessages-${userId}`);
+    if (!messagesContainer) return;
+
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `dm-message ${messageData.isOwn ? 'own' : ''}`;
+    messageDiv.dataset.messageId = messageData.messageId;
+
+    const timeStr = new Date(messageData.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    
+    let statusIcon = '';
+    if (messageData.isOwn) {
+        statusIcon = messageData.status === 'read' ? 
+            '<i class="fas fa-check-double message-status-double"></i>' : 
+            '<i class="fas fa-check message-status-single"></i>';
+    }
+
+    let contentHtml = escapeHtml(messageData.message);
+    
+    // Handle GIF content
+    if (messageData.isGIF) {
+        contentHtml = `<div class="gif-container"><img src="${messageData.message}" class="gif-image" alt="GIF"></div>`;
+    }
+
+    messageDiv.innerHTML = `
+        <div class="dm-message-bubble">
+            ${messageData.isOwn ? `<button class="dm-delete-btn" onclick="deleteDMMessage('${userId}', '${messageData.messageId}')"><i class="fas fa-trash"></i></button>` : ''}
+            <div class="dm-message-header">
+                <div class="dm-message-time">${timeStr}</div>
+                <div class="dm-message-status">${statusIcon}</div>
+            </div>
+            <div class="dm-message-content">${contentHtml}</div>
+        </div>
+    `;
+
+    // Context menu for reactions and reply
+    messageDiv.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+        showDMReactionPicker(e, messageDiv, userId);
+    });
+
+    messagesContainer.appendChild(messageDiv);
+    scrollDMToBottom(userId);
+
+    // Store message
+    if (!dmMessages.has(userId)) {
+        dmMessages.set(userId, []);
+    }
+    dmMessages.get(userId).push(messageData);
+}
+
+function scrollDMToBottom(userId) {
+    const messagesContainer = document.getElementById(`dmMessages-${userId}`);
+    if (messagesContainer) {
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+}
+
+function loadDMMessages(userId) {
+    const messages = dmMessages.get(userId) || [];
+    messages.forEach(msg => addDMMessageToWindow(userId, msg));
+}
+
+function closeDMWindow(userId) {
+    const dmWindow = openDMWindows.get(userId);
+    if (dmWindow) {
+        dmWindow.style.animation = 'dmWindowSlideOut 0.3s ease-in forwards';
+        setTimeout(() => {
+            dmWindow.remove();
+            openDMWindows.delete(userId);
+        }, 300);
+    }
+}
+
+function minimizeDMWindow(userId) {
+    // Return to global chat (hide DM window but keep it in memory)
+    closeDMWindow(userId);
+}
+
+function deleteDMMessage(userId, messageId) {
+    if (confirm('Delete this message?')) {
+        socket.emit('delete-dm-message', { targetUserId: userId, messageId: messageId });
+        
+        // Remove from UI
+        const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
+        if (messageElement) {
+            messageElement.style.animation = 'messageSlideOut 0.3s ease-in forwards';
+            setTimeout(() => messageElement.remove(), 300);
+        }
+        
+        // Remove from local storage
+        const messages = dmMessages.get(userId);
+        if (messages) {
+            const index = messages.findIndex(msg => msg.messageId === messageId);
+            if (index > -1) {
+                messages.splice(index, 1);
+            }
+        }
+    }
+}
+
+function showDMReactionPicker(event, messageElement, userId) {
+    selectedMessage = messageElement;
+    
+    const rect = messageElement.getBoundingClientRect();
+    reactionPicker.style.display = 'block';
+    reactionPicker.style.left = Math.min(rect.left, window.innerWidth - 200) + 'px';
+    reactionPicker.style.top = (rect.top - reactionPicker.offsetHeight - 10) + 'px';
+    
+    // Store DM context
+    reactionPicker.dataset.dmUserId = userId;
+    reactionPicker.style.animation = 'pickerSlideIn 0.3s ease-out';
+}
+
+function handleGIFUpload(userId, input) {
+    const file = input.files[0];
+    if (!file) return;
+
+    // Check if it's an image
+    if (!file.type.startsWith('image/')) {
+        alert('Please select an image file!');
+        return;
+    }
+
+    // Check file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+        alert('File size must be less than 5MB!');
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const messageData = {
+            targetUserId: userId,
+            message: e.target.result,
+            timestamp: new Date(),
+            messageId: Date.now() + Math.random(),
+            isGIF: true
+        };
+
+        socket.emit('dm-message', messageData);
+
+        // Add to local messages immediately
+        addDMMessageToWindow(userId, {
+            ...messageData,
+            sender: currentUser,
+            isOwn: true,
+            status: 'sent'
+        });
+    };
+    reader.readAsDataURL(file);
+    
+    // Clear input
+    input.value = '';
+}
+
+function showDMTypingIndicator(userId, username, color) {
+    const typingContainer = document.getElementById(`dmTyping-${userId}`);
+    if (!typingContainer) return;
+
+    typingContainer.innerHTML = `
+        <div class="dm-typing">
+            <span style="color: ${color}">${username}</span> is typing
+            <div class="typing-dots">
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+            </div>
+        </div>
+    `;
+}
+
+function hideDMTypingIndicator(userId) {
+    const typingContainer = document.getElementById(`dmTyping-${userId}`);
+    if (typingContainer) {
+        typingContainer.innerHTML = '';
+    }
+}
+// Smooth close for DM windows
+document.addEventListener("click", function(e) {
+    if (e.target.closest(".dm-close")) {     // when clicking the close button
+        const dmWindow = e.target.closest(".dm-window");
+        if (dmWindow) {
+            dmWindow.classList.add("closing");  // add slide-out animation
+            dmWindow.addEventListener("animationend", () => {
+                dmWindow.remove();              // remove after animation finishes
+            }, { once: true });
+        }
+    }
+});
+
+
+// Add message slide out animation
+const dmStyle = document.createElement('style');
+dmStyle.textContent = `
+    @keyframes dmWindowSlideOut {
+        0% { opacity: 1; transform: scale(1) translateY(0); }
+        100% { opacity: 0; transform: scale(0.8) translateY(50px); }
+    }
+    
+    @keyframes messageSlideOut {
+        0% { opacity: 1; transform: translateX(0); }
+        100% { opacity: 0; transform: translateX(-50px); }
+    }
+`;
+document.head.appendChild(dmStyle);
 
 // Check for restricted usernames
 function isRestrictedUsername(username) {
