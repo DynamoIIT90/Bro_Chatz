@@ -239,7 +239,7 @@ function initializeEventListeners() {
             startChatBtn.classList.remove('ready');
         }
     });
-
+    initializePostsSystem();
     // Elite Mode Events
     const developerUsername = document.getElementById('developerUsername');
     const developerPassword = document.getElementById('developerPassword');
@@ -455,6 +455,7 @@ function startChat() {
     currentUser = username;
     // Initialize DM system
     initializeDMSystem();
+    initializePostsSystem();
     // Developer Phonk â€" play once per browser session
     if (currentUser === "DEVELOPER" && !sessionStorage.getItem('phonkPlayed')) {
         const phonkAudio = new Audio('phonk.mp3'); // file path relative to public folder
@@ -944,22 +945,43 @@ function clearReply() {
     replyPreview.style.display = 'none';
 }
 
-// Notification System
 function showUserNotification(data) {
     const notification = document.createElement('div');
     notification.className = `notification ${data.type}`;
     
-    const icon = data.type === 'join' ? '֎' : '⚔️';
+    let icon, message;
+    
+    switch(data.type) {
+        case 'join':
+            icon = '🌟';
+            message = `<strong style="color: ${data.color}">${data.username}</strong> ${data.message}`;
+            break;
+        case 'exit':
+        case 'leave':
+            icon = '⚡️';
+            message = `<strong style="color: ${data.color}">${data.username}</strong> ${data.message}`;
+            break;
+        case 'comment':
+            icon = '💬';
+            message = `<strong style="color: ${data.color}">${data.username}</strong> commented on your post`;
+            break;
+        case 'reaction':
+            icon = data.emoji || '👍';
+            message = `<strong style="color: ${data.color}">${data.username}</strong> reacted to your ${data.target || 'message'}`;
+            break;
+        default:
+            icon = '📢';
+            message = `<strong style="color: ${data.color}">${data.username}</strong> ${data.message}`;
+    }
     
     notification.innerHTML = `
         <div class="notification-content">
-            ${icon} <strong style="color: ${data.color}">${data.username}</strong> ${data.message}
+            ${icon} ${message}
         </div>
     `;
     
     notificationContainer.appendChild(notification);
     
-    // Auto remove after animation
     setTimeout(() => {
         notification.classList.add('notification-burst');
         setTimeout(() => {
@@ -967,6 +989,7 @@ function showUserNotification(data) {
         }, 500);
     }, 3000);
 }
+
 
 function showReactionNotification(data) {
     const notification = document.createElement('div');
@@ -1504,6 +1527,7 @@ function scrollDMToBottom(userId) {
     }
 }
 
+
 function loadDMMessages(userId) {
     const messages = dmMessages.get(userId) || [];
     messages.forEach(msg => addDMMessageToWindow(userId, msg));
@@ -1657,4 +1681,880 @@ document.head.appendChild(dmStyle);
 function isRestrictedUsername(username) {
     const restricted = ['developer', 'DEVELOPER', 'Developer', 'DEVEL0PER', 'devel0per'];
     return restricted.includes(username);
+}
+// ADD this JavaScript code to your script.js file (append at the end)
+
+// ================= POSTS SYSTEM ================= 
+
+// Posts System Variables
+let postsData = new Map(); // postId -> post object
+let currentPostView = 'featured'; // 'featured' or 'my-posts'
+let selectedPostForComment = null;
+let currentEditingPost = null;
+
+// Initialize Posts System
+function initializePostsSystem() {
+    // Update hamburger menu click handler
+    const postsContainer = document.getElementById('postsContainer');
+    const postsWindow = document.getElementById('postsWindow');
+    const createPostWindow = document.getElementById('createPostWindow');
+    const commentsWindow = document.getElementById('commentsWindow');
+    const editPostModal = document.getElementById('editPostModal');
+   // ================= POSTS EVENT DELEGATION =================
+const postsFeed = document.getElementById("postsFeed");
+if (postsFeed) {
+    postsFeed.addEventListener("click", function(e) {
+        const postElement = e.target.closest(".post-item");
+        if (!postElement) return;
+        const postId = postElement.dataset.postId;
+
+        // ❤️ Reaction
+        if (e.target.classList.contains("react-btn")) {
+            socket.emit("post-reaction", { postId, emoji: "❤️" });
+        }
+
+        // 🗑️ Delete
+        if (e.target.classList.contains("delete-btn")) {
+            if (confirm("Delete this post?")) {
+                socket.emit("delete-post", { postId });
+            }
+        }
+
+        // ✏️ Edit
+        if (e.target.classList.contains("edit-btn")) {
+            const post = postsData.get(postId);
+            if (!post) return;
+            document.getElementById("editPostContent").value = post.content;
+            document.getElementById("editPostModal").style.display = "flex";
+
+            document.getElementById("editSaveBtn").onclick = () => {
+                const newContent = document.getElementById("editPostContent").value.trim();
+                if (newContent) {
+                    socket.emit("edit-post", { postId, content: newContent });
+                    document.getElementById("editPostModal").style.display = "none";
+                }
+            };
+        }
+
+        // 💬 Open comments
+        if (e.target.classList.contains("comment-btn")) {
+            selectedPostForComment = postId;
+            document.getElementById("commentsWindow").style.display = "flex";
+            socket.emit("get-post-comments", { postId });
+        }
+    });
+}
+
+// ================= COMMENT SEND BUTTON =================
+const sendCommentBtn = document.getElementById("sendCommentBtn");
+if (sendCommentBtn) {
+    sendCommentBtn.addEventListener("click", () => {
+        const content = document.getElementById("commentInput").value.trim();
+        if (content && selectedPostForComment) {
+            socket.emit("post-comment", {
+                id: generatePostId(),
+                postId: selectedPostForComment,
+                content
+            });
+            document.getElementById("commentInput").value = "";
+        }
+    });
+}
+
+
+    // Posts container click
+    postsContainer.addEventListener('click', function() {
+        document.getElementById('userHamburgerMenu').classList.remove('open');
+        document.getElementById('userHamburgerBtn').classList.remove('active');
+        showPostsWindow();
+    });
+
+    // Posts window controls
+    document.getElementById('postsBackBtn').addEventListener('click', function() {
+        hidePostsWindow();
+    });
+
+    document.getElementById('postsRefreshBtn').addEventListener('click', function() {
+        refreshPosts();
+    });
+
+    document.getElementById('postsHomeBtn').addEventListener('click', function() {
+        hidePostsWindow();
+    });
+
+    document.getElementById('postsCreateBtn').addEventListener('click', function() {
+        showCreatePostWindow();
+    });
+
+    // Navigation buttons
+    document.getElementById('featuredPostsBtn').addEventListener('click', function() {
+        switchPostView('featured');
+    });
+
+    document.getElementById('myPostsBtn').addEventListener('click', function() {
+        switchPostView('my-posts');
+    });
+
+    // Create post controls
+    document.getElementById('createBackBtn').addEventListener('click', function() {
+        hideCreatePostWindow();
+    });
+
+    document.getElementById('cancelPostBtn').addEventListener('click', function() {
+        hideCreatePostWindow();
+    });
+
+    document.getElementById('publishPostBtn').addEventListener('click', function() {
+        publishPost();
+    });
+
+    // Comments controls
+    document.getElementById('commentsBackBtn').addEventListener('click', function() {
+        hideCommentsWindow();
+    });
+
+    document.getElementById('sendCommentBtn').addEventListener('click', function() {
+        sendComment();
+    });
+
+    // Edit post controls
+    document.getElementById('editCloseBtn').addEventListener('click', function() {
+        hideEditPostModal();
+    });
+
+    document.getElementById('editCancelBtn').addEventListener('click', function() {
+        hideEditPostModal();
+    });
+
+    document.getElementById('editSaveBtn').addEventListener('click', function() {
+        saveEditedPost();
+    });
+
+   // Event delegation for post actions
+document.getElementById("postsFeed").addEventListener("click", function(e) {
+    const postElement = e.target.closest(".post-item");
+    if (!postElement) return;
+    const postId = postElement.dataset.postId;
+
+    // ❤️ Reaction
+    if (e.target.classList.contains("react-btn")) {
+        socket.emit("post-reaction", { postId, emoji: "❤️" });
+    }
+
+    // 🗑️ Delete
+    if (e.target.classList.contains("delete-btn")) {
+        if (confirm("Delete this post?")) {
+            socket.emit("delete-post", { postId });
+        }
+    }
+
+    // ✏️ Edit
+    if (e.target.classList.contains("edit-btn")) {
+        const post = postsData.get(postId);
+        if (!post) return;
+        document.getElementById("editPostContent").value = post.content;
+        document.getElementById("editPostModal").style.display = "flex";
+
+        document.getElementById("editSaveBtn").onclick = () => {
+            const newContent = document.getElementById("editPostContent").value.trim();
+            if (newContent) {
+                socket.emit("edit-post", { postId, content: newContent });
+                document.getElementById("editPostModal").style.display = "none";
+            }
+        };
+    }
+
+    // 💬 Open comments
+    if (e.target.classList.contains("comment-btn")) {
+        selectedPostForComment = postId;
+        document.getElementById("commentsWindow").style.display = "flex";
+        socket.emit("get-post-comments", { postId });
+    }
+});
+
+
+    // Image upload
+    document.getElementById('postImageInput').addEventListener('change', handleImageUpload);
+
+    // Comment input enter key
+    document.getElementById('commentInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendComment();
+        }
+    });
+
+    // Auto-resize comment input
+    document.getElementById('commentInput').addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = Math.min(this.scrollHeight, 100) + 'px';
+    });
+
+    // Close dropdowns on outside click
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.post-menu-btn')) {
+            closeAllDropdowns();
+        }
+    });
+}
+
+// Show/Hide Windows
+function showPostsWindow() {
+    document.getElementById('postsWindow').style.display = 'flex';
+    loadPosts();
+}
+
+function hidePostsWindow() {
+    document.getElementById('postsWindow').style.display = 'none';
+}
+
+function showCreatePostWindow() {
+    document.getElementById('createPostWindow').style.display = 'flex';
+    document.getElementById('postContent').focus();
+}
+
+function hideCreatePostWindow() {
+    document.getElementById('createPostWindow').style.display = 'none';
+    clearCreatePostForm();
+}
+
+function showCommentsWindow(postId) {
+    selectedPostForComment = postId;
+    document.getElementById('commentsWindow').style.display = 'flex';
+    loadOriginalPost(postId);
+    loadComments(postId);
+}
+
+function hideCommentsWindow() {
+    document.getElementById('commentsWindow').style.display = 'none';
+    selectedPostForComment = null;
+}
+
+function showEditPostModal(postId) {
+    const post = postsData.get(postId);
+    if (!post) return;
+
+    currentEditingPost = postId;
+    document.getElementById('editPostContent').value = post.content;
+    document.getElementById('editPostModal').style.display = 'flex';
+    document.getElementById('editPostContent').focus();
+}
+
+function hideEditPostModal() {
+    document.getElementById('editPostModal').style.display = 'none';
+    currentEditingPost = null;
+    document.getElementById('editPostContent').value = '';
+}
+
+// Post Navigation
+function switchPostView(view) {
+    currentPostView = view;
+    
+    // Update active button
+    document.querySelectorAll('.posts-nav-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    if (view === 'featured') {
+        document.getElementById('featuredPostsBtn').classList.add('active');
+    } else {
+        document.getElementById('myPostsBtn').classList.add('active');
+    }
+    
+    loadPosts();
+}
+
+// Load Posts
+function loadPosts() {
+    const feed = document.getElementById('postsFeed');
+    
+    // Show loading
+    feed.innerHTML = `
+        <div class="loading-posts">
+            <div class="loading-spinner-posts"></div>
+            Loading posts...
+        </div>
+    `;
+
+    setTimeout(() => {
+        const filteredPosts = getFilteredPosts();
+        renderPosts(filteredPosts);
+    }, 500);
+}
+
+function getFilteredPosts() {
+    const posts = Array.from(postsData.values());
+    
+    if (currentPostView === 'my-posts') {
+        return posts.filter(post => post.author === currentUser)
+                   .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    } else {
+        return posts.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    }
+}
+
+function renderPosts(posts) {
+    const feed = document.getElementById('postsFeed');
+    
+    if (posts.length === 0) {
+        feed.innerHTML = `
+            <div class="empty-posts">
+                <i class="fas fa-newspaper"></i>
+                <h3>No posts yet</h3>
+                <p>${currentPostView === 'my-posts' ? 'You haven\'t created any posts yet.' : 'Be the first to create a post!'}</p>
+            </div>
+        `;
+        return;
+    }
+
+    feed.innerHTML = posts.map(post => createPostHTML(post)).join('');
+    
+    // Add event listeners to new posts
+    addPostEventListeners();
+}
+
+function createPostHTML(post) {
+    const isOwnPost = post.author === currentUser;
+    const timeStr = formatTime(post.timestamp);
+    const avatarLetter = post.author.charAt(0).toUpperCase();
+    
+    return `
+        <div class="post-item" data-post-id="${post.id}">
+            <div class="post-header">
+                <div class="post-user-info">
+                    <div class="post-avatar" style="background: ${post.authorColor}">
+                        ${avatarLetter}
+                    </div>
+                    <div>
+                        <div class="post-user-name" style="color: ${post.authorColor}">
+                            ${post.author}
+                            ${post.isDeveloper ? '<i class="fas fa-check-circle developer-badge" title="Verified Developer"></i>' : ''}
+                        </div>
+                        <div class="post-timestamp">${timeStr}</div>
+                    </div>
+                </div>
+                ${isOwnPost ? `
+                <div class="post-menu" style="position: relative;">
+                    <button class="post-menu-btn" onclick="togglePostDropdown('${post.id}')">
+                        <i class="fas fa-ellipsis-v"></i>
+                    </button>
+                    <div class="post-dropdown" id="dropdown-${post.id}">
+                        <div class="dropdown-item" onclick="editPost('${post.id}')">
+                            <i class="fas fa-edit"></i> Edit
+                        </div>
+                        <div class="dropdown-item delete" onclick="deletePost('${post.id}')">
+                            <i class="fas fa-trash"></i> Delete
+                        </div>
+                    </div>
+                </div>
+                ` : ''}
+            </div>
+            
+            <div class="post-content">
+                <div class="post-text">${escapeHtml(post.content)}</div>
+                ${post.image ? `<img src="${post.image}" class="post-image" alt="Post image">` : ''}
+            </div>
+            
+            <div class="post-actions">
+                <div class="post-action-group">
+                    <button class="post-action-btn" onclick="togglePostReaction('${post.id}', '❤️')">
+                        <i class="fas fa-heart"></i>
+                        <span>${post.reactions?.['❤️'] || 0}</span>
+                    </button>
+                    <button class="post-action-btn" onclick="showCommentsWindow('${post.id}')">
+                        <i class="fas fa-comment"></i>
+                        <span>${post.comments?.length || 0}</span>
+                    </button>
+                </div>
+                <div class="post-impressions">
+                    ${post.impressions || 0} impressions
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Post Actions
+function togglePostDropdown(postId) {
+    const dropdown = document.getElementById(`dropdown-${postId}`);
+    const isVisible = dropdown.style.display === 'block';
+    
+    // Close all dropdowns
+    closeAllDropdowns();
+    
+    // Toggle current dropdown
+    if (!isVisible) {
+        dropdown.style.display = 'block';
+    }
+}
+
+function closeAllDropdowns() {
+    document.querySelectorAll('.post-dropdown').forEach(dropdown => {
+        dropdown.style.display = 'none';
+    });
+}
+
+function editPost(postId) {
+    closeAllDropdowns();
+    showEditPostModal(postId);
+}
+
+function deletePost(postId) {
+    closeAllDropdowns();
+    
+    if (confirm('Are you sure you want to delete this post?')) {
+        // Emit delete event to server
+        socket.emit('delete-post', { postId: postId });
+        
+        // Remove from local storage
+        postsData.delete(postId);
+        
+        // Refresh posts view
+        loadPosts();
+        
+        showNotification('Post deleted successfully', 'success');
+    }
+}
+
+function togglePostReaction(postId, emoji) {
+    const post = postsData.get(postId);
+    if (!post) return;
+    
+    // Initialize reactions if not exists
+    if (!post.reactions) {
+        post.reactions = {};
+    }
+    
+    // Toggle reaction
+    if (post.userReactions && post.userReactions.includes(emoji)) {
+        // Remove reaction
+        post.reactions[emoji] = Math.max(0, (post.reactions[emoji] || 0) - 1);
+        post.userReactions = post.userReactions.filter(r => r !== emoji);
+    } else {
+        // Add reaction
+        post.reactions[emoji] = (post.reactions[emoji] || 0) + 1;
+        if (!post.userReactions) post.userReactions = [];
+        post.userReactions.push(emoji);
+    }
+    
+    // Emit to server
+    socket.emit('post-reaction', {
+        postId: postId,
+        emoji: emoji,
+        username: currentUser
+    });
+    
+    // Update UI
+    loadPosts();
+}
+
+// Create Post
+function publishPost() {
+    const content = document.getElementById('postContent').value.trim();
+    const imagePreview = document.getElementById('imagePreview');
+    const image = imagePreview.querySelector('img')?.src || null;
+    
+    if (!content) {
+        showNotification('Please write something to post', 'error');
+        return;
+    }
+    
+    if (content.length > 500) {
+        showNotification('Post content is too long (max 500 characters)', 'error');
+        return;
+    }
+    
+    const postData = {
+        id: Date.now() + Math.random(),
+        content: content,
+        image: image,
+        author: currentUser,
+        authorColor: userColor,
+        isDeveloper: isDeveloper,
+        timestamp: new Date(),
+        reactions: {},
+        comments: [],
+        impressions: 0
+    };
+    
+    // Add to local storage
+    postsData.set(postData.id, postData);
+    
+    // Emit to server
+    socket.emit('create-post', postData);
+    
+    // Close create window
+    hideCreatePostWindow();
+    
+    // Refresh posts if on featured view
+    if (currentPostView === 'featured') {
+        loadPosts();
+    }
+    
+    showNotification('Post published successfully!', 'success');
+}
+
+function clearCreatePostForm() {
+    document.getElementById('postContent').value = '';
+    document.getElementById('imagePreview').style.display = 'none';
+    document.getElementById('imagePreview').innerHTML = '';
+}
+
+function handleImageUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    // Check file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+        showNotification('Image size must be less than 5MB', 'error');
+        return;
+    }
+    
+    // Check file type
+    if (!file.type.startsWith('image/')) {
+        showNotification('Please select an image file', 'error');
+        return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const preview = document.getElementById('imagePreview');
+        preview.innerHTML = `
+            <img src="${e.target.result}" alt="Preview">
+            <button onclick="removeImagePreview()" style="position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.7); border: none; color: white; border-radius: 50%; width: 25px; height: 25px; cursor: pointer;">×</button>
+        `;
+        preview.style.display = 'block';
+        preview.style.position = 'relative';
+    };
+    reader.readAsDataURL(file);
+}
+
+function removeImagePreview() {
+    document.getElementById('imagePreview').style.display = 'none';
+    document.getElementById('imagePreview').innerHTML = '';
+    document.getElementById('postImageInput').value = '';
+}
+
+// Edit Post
+function saveEditedPost() {
+    if (!currentEditingPost) return;
+    
+    const newContent = document.getElementById('editPostContent').value.trim();
+    
+    if (!newContent) {
+        showNotification('Post content cannot be empty', 'error');
+        return;
+    }
+    
+    if (newContent.length > 500) {
+        showNotification('Post content is too long (max 500 characters)', 'error');
+        return;
+    }
+    
+    const post = postsData.get(currentEditingPost);
+    if (post) {
+        post.content = newContent;
+        post.edited = true;
+        post.editedAt = new Date();
+        
+        // Emit to server
+        socket.emit('edit-post', {
+            postId: currentEditingPost,
+            content: newContent
+        });
+        
+        hideEditPostModal();
+        loadPosts();
+        showNotification('Post updated successfully!', 'success');
+    }
+}
+
+// Comments System
+function loadOriginalPost(postId) {
+    const post = postsData.get(postId);
+    if (!post) return;
+    
+    const originalPost = document.getElementById('originalPost');
+    originalPost.innerHTML = createPostHTML(post);
+}
+
+function loadComments(postId) {
+    const post = postsData.get(postId);
+    if (!post) return;
+    
+    const commentsSection = document.getElementById('commentsSection');
+    const comments = post.comments || [];
+    
+    if (comments.length === 0) {
+        commentsSection.innerHTML = `
+            <div class="empty-posts">
+                <i class="fas fa-comments"></i>
+                <h3>No comments yet</h3>
+                <p>Be the first to comment on this post!</p>
+            </div>
+        `;
+        return;
+    }
+    
+    commentsSection.innerHTML = comments.map(comment => createCommentHTML(comment)).join('');
+}
+
+function createCommentHTML(comment) {
+    const timeStr = formatTime(comment.timestamp);
+    const avatarLetter = comment.author.charAt(0).toUpperCase();
+    
+    return `
+        <div class="comment-item" data-comment-id="${comment.id}">
+            <div class="comment-header">
+                <div class="comment-avatar" style="background: ${comment.authorColor}">
+                    ${avatarLetter}
+                </div>
+                <div class="comment-username" style="color: ${comment.authorColor}">
+                    ${comment.author}
+                    ${comment.isDeveloper ? '<i class="fas fa-check-circle developer-badge" title="Verified Developer"></i>' : ''}
+                </div>
+                <div class="comment-time">${timeStr}</div>
+            </div>
+            <div class="comment-content">${escapeHtml(comment.content)}</div>
+            <div class="comment-actions">
+                <button class="comment-reply-btn" onclick="replyToComment('${comment.id}')">
+                    <i class="fas fa-reply"></i> Reply
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+function sendComment() {
+    if (!selectedPostForComment) return;
+    
+    const commentInput = document.getElementById('commentInput');
+    const content = commentInput.value.trim();
+    
+    if (!content) {
+        showNotification('Please write a comment', 'error');
+        return;
+    }
+    
+    if (content.length > 300) {
+        showNotification('Comment is too long (max 300 characters)', 'error');
+        return;
+    }
+    
+    const commentData = {
+        id: Date.now() + Math.random(),
+        postId: selectedPostForComment,
+        content: content,
+        author: currentUser,
+        authorColor: userColor,
+        isDeveloper: isDeveloper,
+        timestamp: new Date()
+    };
+    
+    // Add to post
+    const post = postsData.get(selectedPostForComment);
+    if (post) {
+        if (!post.comments) post.comments = [];
+        post.comments.push(commentData);
+        
+        // Emit to server
+        socket.emit('post-comment', commentData);
+        
+        // Clear input
+        commentInput.value = '';
+        commentInput.style.height = 'auto';
+        
+        // Reload comments
+        loadComments(selectedPostForComment);
+        
+        showNotification('Comment added!', 'success');
+    }
+}
+
+function replyToComment(commentId) {
+    // This can be expanded for threaded comments
+    console.log('Reply to comment:', commentId);
+    showNotification('Reply feature coming soon!', 'info');
+}
+
+// Refresh Posts
+function refreshPosts() {
+    const refreshBtn = document.getElementById('postsRefreshBtn');
+    refreshBtn.style.animation = 'spin 1s linear';
+    
+    setTimeout(() => {
+        refreshBtn.style.animation = '';
+        loadPosts();
+        showNotification('Posts refreshed!', 'success');
+    }, 1000);
+}
+
+// Utility Functions
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.innerHTML = `
+        <div class="notification-content">
+            ${message}
+        </div>
+    `;
+    
+    document.getElementById('notificationContainer').appendChild(notification);
+    
+    setTimeout(() => {
+        notification.classList.add('notification-burst');
+        setTimeout(() => {
+            notification.remove();
+        }, 500);
+    }, 3000);
+}
+
+// Socket Events for Posts
+socket.on('post-created', function(postData) {
+    postsData.set(postData.id, postData);
+    
+    if (currentPostView === 'featured' && document.getElementById('postsWindow').style.display === 'flex') {
+        loadPosts();
+    }
+    
+    // Show notification if not own post
+    if (postData.author !== currentUser) {
+        showNotification(`${postData.author} created a new post`, 'info');
+    }
+});
+
+socket.on('post-updated', function(data) {
+    const post = postsData.get(data.postId);
+    if (post) {
+        post.content = data.content;
+        post.edited = true;
+        post.editedAt = data.editedAt;
+        
+        if (document.getElementById('postsWindow').style.display === 'flex') {
+            loadPosts();
+        }
+    }
+});
+
+socket.on('post-deleted', function(data) {
+    postsData.delete(data.postId);
+    
+    if (document.getElementById('postsWindow').style.display === 'flex') {
+        loadPosts();
+    }
+    
+    showNotification(`Post deleted`, 'info');
+});
+
+socket.on('post-comment', function(commentData) {
+    const post = postsData.get(commentData.postId);
+    if (post) {
+        if (!post.comments) post.comments = [];
+        post.comments.push(commentData);
+        
+        // If viewing comments for this post, reload
+        if (selectedPostForComment === commentData.postId) {
+            loadComments(commentData.postId);
+        }
+        
+        // Show notification if someone commented on your post
+        if (post.author === currentUser && commentData.author !== currentUser) {
+            showNotification(`${commentData.author} commented on your post`, 'info');
+        }
+    }
+});
+
+socket.on('post-reaction', function(data) {
+    const post = postsData.get(data.postId);
+    if (post) {
+        if (!post.reactions) post.reactions = {};
+        post.reactions[data.emoji] = data.count;
+        
+        if (document.getElementById('postsWindow').style.display === 'flex') {
+            loadPosts();
+        }
+    }
+});
+
+// ===== Extra Socket Events for Posts =====
+
+// Comment notification
+socket.on('comment-notification', function(data) {
+    showUserNotification({
+        type: 'comment',
+        username: data.commenterName,
+        color: '#3a86ff',
+        message: 'commented on your post'
+    });
+});
+
+// Post impression update
+socket.on('post-impression-update', function(data) {
+    const postElement = document.querySelector(`[data-post-id="${data.postId}"]`);
+    if (postElement) {
+        const impressionsEl = postElement.querySelector('.post-impressions');
+        if (impressionsEl) {
+            impressionsEl.textContent = `${data.impressions} impressions`;
+        }
+    }
+});
+
+
+// ================= POSTS EXTRA SOCKET EVENTS =================
+socket.on('comment-notification', function(data) {
+    showUserNotification({
+        type: 'comment',
+        username: data.commenterName,
+        color: '#3a86ff',
+        message: 'commented on your post'
+    });
+});
+
+socket.on('post-impression-update', function(data) {
+    const postElement = document.querySelector(`[data-post-id="${data.postId}"]`);
+    if (postElement) {
+        const impressionsEl = postElement.querySelector('.post-impressions');
+        if (impressionsEl) {
+            impressionsEl.textContent = `${data.impressions} impressions`;
+        }
+    }
+});
+
+// ================= UTILITY FUNCTIONS FOR POSTS =================
+function generatePostId() {
+    return Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+}
+
+function formatPostTime(timestamp) {
+    const now = new Date();
+    const postTime = new Date(timestamp);
+    const diffMs = now - postTime;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+
+    return postTime.toLocaleDateString();
+}
+
+// Event Listeners Helper
+function addPostEventListeners() {
+    // Click on post to increment impressions
+    document.querySelectorAll('.post-item').forEach(postEl => {
+        postEl.addEventListener('click', function(e) {
+            // Don't count clicks on buttons
+            if (e.target.closest('button') || e.target.closest('.post-actions')) return;
+            
+            const postId = this.dataset.postId;
+            const post = postsData.get(postId);
+            if (post) {
+                post.impressions = (post.impressions || 0) + 1;
+                socket.emit('post-impression', { postId: postId });
+            }
+        });
+    });
 }

@@ -271,13 +271,17 @@ socket.on('dm-message', (data) => {
         dmMessages.get(conversationId).push(messageData);
 
         // Send to target user
-        io.to(targetUserId).emit('dm-message', messageData);
-        
-        // Confirm delivery to sender
-        socket.emit('dm-message-status', {
-            messageId: messageId,
-            status: 'delivered'
-        });
+io.to(targetUserId).emit('dm-message', messageData);
+
+// Echo back to sender too (so their UI adds it)
+socket.emit('dm-message', { ...messageData, isOwn: true });
+
+// Confirm delivery status
+socket.emit('dm-message-status', {
+    messageId: messageId,
+    status: 'delivered'
+});
+
 
     } catch (error) {
         console.error('Error in dm-message:', error);
@@ -540,6 +544,300 @@ socket.on("changePhonk", (trackPath) => {
             }
         } catch (err) { console.error('Error in kick-user:', err); }
     });
+
+// ADD this code to your server.js file, insert it just before the disconnect event handler
+
+// ================= POSTS SYSTEM SERVER HANDLERS =================
+
+// Posts storage (in-memory)
+const postsStorage = new Map(); // postId -> post object
+const postComments = new Map(); // postId -> comments array
+const postReactions = new Map(); // postId -> reactions object
+
+// ===== Create Post =====
+socket.on('create-post', (postData) => {
+    try {
+        const user = onlineUsers.get(socket.id);
+        if (!user) return;
+
+        // Validate post data
+        if (!postData.content || postData.content.trim().length === 0) {
+            socket.emit('error-message', { message: 'Post content cannot be empty' });
+            return;
+        }
+
+        if (postData.content.length > 500) {
+            socket.emit('error-message', { message: 'Post content too long (max 500 characters)' });
+            return;
+        }
+
+        // Create post object
+        const post = {
+            id: postData.id,
+            content: postData.content.trim(),
+            image: postData.image || null,
+            author: user.username,
+            authorColor: user.color,
+            isDeveloper: user.isDeveloper,
+            timestamp: new Date(),
+            reactions: {},
+            impressions: 0
+        };
+
+        // Store post
+        postsStorage.set(post.id, post);
+        postComments.set(post.id, []);
+        postReactions.set(post.id, {});
+
+        // Broadcast to all users
+        io.emit('post-created', post);
+
+        console.log(`📝 New post created by ${user.username}: ${post.content.substring(0, 50)}...`);
+
+    } catch (error) {
+        console.error('Error in create-post:', error);
+        socket.emit('error-message', { message: 'Failed to create post' });
+    }
+});
+
+// ===== Edit Post =====
+socket.on('edit-post', (data) => {
+    try {
+        const user = onlineUsers.get(socket.id);
+        if (!user) return;
+
+        const { postId, content } = data;
+        const post = postsStorage.get(postId);
+
+        if (!post) {
+            socket.emit('error-message', { message: 'Post not found' });
+            return;
+        }
+
+        // Check ownership
+        if (post.author !== user.username && !user.isDeveloper) {
+            socket.emit('error-message', { message: 'You can only edit your own posts' });
+            return;
+        }
+
+        // Validate content
+        if (!content || content.trim().length === 0) {
+            socket.emit('error-message', { message: 'Post content cannot be empty' });
+            return;
+        }
+
+        if (content.length > 500) {
+            socket.emit('error-message', { message: 'Post content too long' });
+            return;
+        }
+
+        // Update post
+        post.content = content.trim();
+        post.edited = true;
+        post.editedAt = new Date();
+
+        // Broadcast update
+        io.emit('post-updated', {
+            postId: postId,
+            content: post.content,
+            edited: true,
+            editedAt: post.editedAt
+        });
+
+        console.log(`✏️ Post edited by ${user.username}: ${postId}`);
+
+    } catch (error) {
+        console.error('Error in edit-post:', error);
+    }
+});
+
+// ===== Delete Post =====
+socket.on('delete-post', (data) => {
+    try {
+        const user = onlineUsers.get(socket.id);
+        if (!user) return;
+
+        const { postId } = data;
+        const post = postsStorage.get(postId);
+
+        if (!post) {
+            socket.emit('error-message', { message: 'Post not found' });
+            return;
+        }
+
+        // Check ownership or developer privileges
+        if (post.author !== user.username && !user.isDeveloper) {
+            socket.emit('error-message', { message: 'You can only delete your own posts' });
+            return;
+        }
+
+        // Delete post and related data
+        postsStorage.delete(postId);
+        postComments.delete(postId);
+        postReactions.delete(postId);
+
+        // Broadcast deletion
+        io.emit('post-deleted', { postId: postId });
+
+        console.log(`🗑️ Post deleted by ${user.username}: ${postId}`);
+
+    } catch (error) {
+        console.error('Error in delete-post:', error);
+    }
+});
+
+// ===== Post Comment =====
+socket.on('post-comment', (commentData) => {
+    try {
+        const user = onlineUsers.get(socket.id);
+        if (!user) return;
+
+        // Validate comment
+        if (!commentData.content || commentData.content.trim().length === 0) {
+            socket.emit('error-message', { message: 'Comment cannot be empty' });
+            return;
+        }
+
+        if (commentData.content.length > 300) {
+            socket.emit('error-message', { message: 'Comment too long (max 300 characters)' });
+            return;
+        }
+
+        const post = postsStorage.get(commentData.postId);
+        if (!post) {
+            socket.emit('error-message', { message: 'Post not found' });
+            return;
+        }
+
+        // Create comment object
+        const comment = {
+            id: commentData.id,
+            postId: commentData.postId,
+            content: commentData.content.trim(),
+            author: user.username,
+            authorColor: user.color,
+            isDeveloper: user.isDeveloper,
+            timestamp: new Date()
+        };
+
+        // Store comment
+        if (!postComments.has(commentData.postId)) {
+            postComments.set(commentData.postId, []);
+        }
+        postComments.get(commentData.postId).push(comment);
+
+        // Broadcast comment
+        io.emit('post-comment', comment);
+
+        // Notify post author if different user
+        if (post.author !== user.username) {
+            const authorSocket = [...onlineUsers.entries()].find(([id, u]) => u.username === post.author);
+            if (authorSocket) {
+                io.to(authorSocket[0]).emit('comment-notification', {
+                    commenterName: user.username,
+                    postId: commentData.postId,
+                    message: `${user.username} commented on your post`
+                });
+            }
+        }
+
+        console.log(`💬 New comment by ${user.username} on post ${commentData.postId}`);
+
+    } catch (error) {
+        console.error('Error in post-comment:', error);
+    }
+});
+
+// ===== Post Reaction =====
+socket.on('post-reaction', (data) => {
+    try {
+        const user = onlineUsers.get(socket.id);
+        if (!user) return;
+
+        const { postId, emoji } = data;
+        const post = postsStorage.get(postId);
+        
+        if (!post) return;
+
+        // Get current reactions for this post
+        let reactions = postReactions.get(postId) || {};
+        let userReactions = reactions[user.username] || [];
+
+        // Toggle reaction
+        if (userReactions.includes(emoji)) {
+            // Remove reaction
+            reactions[emoji] = Math.max(0, (reactions[emoji] || 0) - 1);
+            userReactions = userReactions.filter(r => r !== emoji);
+        } else {
+            // Add reaction
+            reactions[emoji] = (reactions[emoji] || 0) + 1;
+            userReactions.push(emoji);
+        }
+
+        reactions[user.username] = userReactions;
+        postReactions.set(postId, reactions);
+
+        // Broadcast reaction update
+        io.emit('post-reaction', {
+            postId: postId,
+            emoji: emoji,
+            count: reactions[emoji],
+            username: user.username
+        });
+
+        console.log(`👍 Reaction ${emoji} by ${user.username} on post ${postId}`);
+
+    } catch (error) {
+        console.error('Error in post-reaction:', error);
+    }
+});
+
+// ===== Post Impression =====
+socket.on('post-impression', (data) => {
+    try {
+        const { postId } = data;
+        const post = postsStorage.get(postId);
+        
+        if (post) {
+            post.impressions = (post.impressions || 0) + 1;
+            
+            // Optionally broadcast impression update
+            io.emit('post-impression-update', {
+                postId: postId,
+                impressions: post.impressions
+            });
+        }
+    } catch (error) {
+        console.error('Error in post-impression:', error);
+    }
+});
+
+// ===== Get All Posts =====
+socket.on('get-posts', () => {
+    try {
+        const posts = Array.from(postsStorage.values())
+            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        
+        socket.emit('posts-list', posts);
+    } catch (error) {
+        console.error('Error in get-posts:', error);
+    }
+});
+
+// ===== Get Post Comments =====
+socket.on('get-post-comments', (data) => {
+    try {
+        const { postId } = data;
+        const comments = postComments.get(postId) || [];
+        
+        socket.emit('post-comments', {
+            postId: postId,
+            comments: comments
+        });
+    } catch (error) {
+        console.error('Error in get-post-comments:', error);
+    }
+});
 
     // ===== Disconnect =====
     socket.on('disconnect', () => {
