@@ -2,6 +2,8 @@ const express = require('express');
 const { createServer } = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
+// Store posts in memory
+const posts = new Map();
 
 // Load environment variables with error handling
 try {
@@ -175,6 +177,61 @@ io.on('connection', (socket) => {
             }
 
             const cleanUsername = username.substring(0, 50);
+
+                // ===== POSTS SYSTEM =====
+    socket.on('create-post', (data) => {
+        const postId = Date.now().toString();
+        const post = {
+            id: postId,
+            author: data.author,
+            content: data.content,
+            reactions: {},
+            comments: [],
+            impressions: 0,
+            timestamp: new Date()
+        };
+        posts.set(postId, post);
+        io.emit('post-created', post);
+    });
+
+    socket.on('post-react', ({ postId, emoji, user }) => {
+        const post = posts.get(postId);
+        if (!post) return;
+        if (!post.reactions[emoji]) post.reactions[emoji] = [];
+        if (!post.reactions[emoji].includes(user)) {
+            post.reactions[emoji].push(user);
+        }
+        io.emit('post-updated', post);
+    });
+
+    socket.on('post-comment', ({ postId, user, comment }) => {
+        const post = posts.get(postId);
+        if (!post) return;
+        post.comments.push({ user, text: comment, time: new Date() });
+        io.emit('post-updated', post);
+    });
+
+    socket.on('post-edit', ({ postId, newContent }) => {
+        const post = posts.get(postId);
+        if (!post) return;
+        post.content = newContent;
+        io.emit('post-updated', post);
+    });
+
+    socket.on('post-delete', ({ postId }) => {
+        if (posts.has(postId)) {
+            posts.delete(postId);
+            io.emit('post-deleted', { postId });
+        }
+    });
+
+    socket.on('post-impression', ({ postId }) => {
+        const post = posts.get(postId);
+        if (!post) return;
+        post.impressions++;
+        io.emit('post-updated', post);
+    });
+
 
             // Developer validation
             if (isDeveloper) {
