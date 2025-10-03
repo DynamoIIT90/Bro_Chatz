@@ -259,7 +259,7 @@ function initializeEventListeners() {
         const username = developerUsername.value.trim();
         const password = developerPassword.value.trim();
         
-        if (username.toLowerCase() === 'developer' && password === 'vivekisgod8085') {
+        if (username.toLowerCase() === 'developer' && password === 'dynamobro8085') {
             isDeveloper = true;
             currentUser = 'DEVELOPER';
             startChat();
