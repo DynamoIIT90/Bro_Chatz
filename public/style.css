@@ -3762,6 +3762,12 @@ html, body {
     margin-bottom: 10px;
     color: rgba(255, 255, 255, 0.7);
 }
+/* Blocked message shake animation */
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-10px); }
+    75% { transform: translateX(10px); }
+}
 
 /* ================= ANIMATIONS ================= */
 @keyframes modalSlideIn {

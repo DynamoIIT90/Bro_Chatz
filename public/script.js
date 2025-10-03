@@ -607,6 +607,18 @@ socket.on('user-kicked', function(data) {
     }
 });
 
+// Message blocked notification
+socket.on('message-blocked', function(data) {
+    showNotification(data.message, 'error');
+    
+    // Visual warning effect
+    const inputArea = document.querySelector('.message-input-area');
+    inputArea.style.animation = 'shake 0.5s';
+    setTimeout(() => {
+        inputArea.style.animation = '';
+    }, 500);
+});
+
 socket.on('user-warned', function(data) {
     if (data.username === currentUser) {
         alert(`âš ï¸ WARNING: You are being warned for: ${data.reason}`);

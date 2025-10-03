@@ -96,6 +96,56 @@ const userColors = [
     '#F8C471', '#82E0AA', '#F1948A', '#85C1E9', '#D7BDE2'
 ];
 
+// ================= WORD FILTER SYSTEM =================
+const BLOCKED_WORDS = ['nigga', 'fuck', 'bitch', 'madarchod', 'madharchod', 'randi', 'rand', 'bsdk', 'bhosdiwale', 'bhosdi', 'bhenchod', 'benchod', 'chod', 'chud', 'sperm', 'land', 'launda', 'lund', 'boob', 'pussy', 'chuchi', 'sex', 'sexy', 'chutiye', 'chut', 'chutiya', '$ex', 'nipple', 'jhaant', 'jant', 'rande's]; // Add or remove words separated by commas
+const userWarnings = new Map(); // Track user warnings (socketId -> count)
+
+function containsBlockedWord(message) {
+    const lowerMessage = message.toLowerCase();
+    return BLOCKED_WORDS.some(word => {
+        // Check if word exists as whole word or part of text
+        const regex = new RegExp(`\\b${word}\\b|${word}`, 'i');
+        return regex.test(lowerMessage);
+    });
+}
+
+function handleMessageViolation(socket, user) {
+    const currentWarnings = (userWarnings.get(socket.id) || 0) + 1;
+    userWarnings.set(socket.id, currentWarnings);
+    
+    // Send warning to user
+    socket.emit('message-blocked', {
+        message: `⚠️ Your message was blocked for containing inappropriate content. Warning ${currentWarnings}/3`,
+        warningCount: currentWarnings
+    });
+    
+    // Kick after 3 violations
+    if (currentWarnings >= 3) {
+        socket.emit('user-kicked', { 
+            username: user.username,
+            reason: 'Multiple violations of chat guidelines'
+        });
+        
+        io.emit('admin-message', { 
+            message: `🚫 ${user.username} was removed for violating chat guidelines`,
+            timestamp: new Date(),
+            type: 'kick'
+        });
+        
+        // Disconnect user
+        setTimeout(() => {
+            socket.disconnect(true);
+            onlineUsers.delete(socket.id);
+            userWarnings.delete(socket.id);
+            io.emit('update-online-count', onlineUsers.size);
+        }, 1000);
+        
+        console.log(`🚫 ${user.username} kicked for word filter violations`);
+    } else {
+        console.log(`⚠️ ${user.username} warned (${currentWarnings}/3)`);
+    }
+}
+
 let currentPhonk = "phonk.mp3"; // default track
 // Enhanced Gemini AI Integration with better error handling
 let genAI, model;
@@ -483,55 +533,62 @@ socket.on("changePhonk", (trackPath) => {
     });
 
     // ===== Chat message =====
-    socket.on('chat-message', (data) => {
-        try {
-            const user = onlineUsers.get(socket.id);
-            if (!user) {
-                socket.emit('error-message', { message: 'User not found. Please refresh and rejoin.' });
+   socket.on('chat-message', (data) => {
+    try {
+        const user = onlineUsers.get(socket.id);
+        if (!user) {
+            socket.emit('error-message', { message: 'User not found. Please refresh and rejoin.' });
+            return;
+        }
+
+        if (!data || !data.message || typeof data.message !== 'string') return;
+
+        const message = data.message.trim();
+        if (message.length === 0 || message.length > 1000) return;
+
+        // ===== CHECK FOR BLOCKED WORDS (Skip for developers) =====
+if (!user.isDeveloper && containsBlockedWord(message)) {
+    handleMessageViolation(socket, user);
+    return; // Stop message from being sent
+}
+
+        // AI command
+        if (message.startsWith('/ai ')) {
+            const aiPrompt = message.substring(4).trim();
+            if (aiPrompt.length === 0) {
+                socket.emit('ai-response', {
+                    prompt: aiPrompt,
+                    response: "Please provide a prompt after /ai command.",
+                    timestamp: new Date()
+                });
                 return;
             }
-
-            if (!data || !data.message || typeof data.message !== 'string') return;
-
-            const message = data.message.trim();
-            if (message.length === 0 || message.length > 1000) return;
-
-            // AI command
-            if (message.startsWith('/ai ')) {
-                const aiPrompt = message.substring(4).trim();
-                if (aiPrompt.length === 0) {
-                    socket.emit('ai-response', {
-                        prompt: aiPrompt,
-                        response: "Please provide a prompt after /ai command.",
-                        timestamp: new Date()
-                    });
-                    return;
-                }
-                socket.emit('ai-typing', true);
-                generateAIResponse(aiPrompt).then(aiResponse => {
-                    socket.emit('ai-typing', false);
-                    socket.emit('ai-response', { prompt: aiPrompt, response: aiResponse, timestamp: new Date() });
-                }).catch(error => {
-                    console.error('AI response error:', error);
-                    socket.emit('ai-typing', false);
-                    socket.emit('ai-response', { prompt: aiPrompt, response: "AI error, try again!", timestamp: new Date() });
-                });
-            } else {
-                // Normal chat
-                const messageData = {
-                    message,
-                    username: user.username,
-                    color: user.color,
-                    timestamp: new Date(),
-                    messageId: Date.now() + Math.random(),
-                    replyTo: data.replyTo || null
-                };
-                io.emit('chat-message', messageData);
-            }
-        } catch (error) {
-            console.error('Error in chat-message:', error);
+            socket.emit('ai-typing', true);
+            generateAIResponse(aiPrompt).then(aiResponse => {
+                socket.emit('ai-typing', false);
+                socket.emit('ai-response', { prompt: aiPrompt, response: aiResponse, timestamp: new Date() });
+            }).catch(error => {
+                console.error('AI response error:', error);
+                socket.emit('ai-typing', false);
+                socket.emit('ai-response', { prompt: aiPrompt, response: "AI error, try again!", timestamp: new Date() });
+            });
+        } else {
+            // Normal chat
+            const messageData = {
+                message,
+                username: user.username,
+                color: user.color,
+                timestamp: new Date(),
+                messageId: Date.now() + Math.random(),
+                replyTo: data.replyTo || null,
+                isDeveloper: user.isDeveloper
+            };
+            io.emit('chat-message', messageData);
         }
-    });
+    } catch (error) {
+        console.error('Error in chat-message:', error);
+    }
+});
 
     // ===== Typing =====
     socket.on('typing-start', () => {
