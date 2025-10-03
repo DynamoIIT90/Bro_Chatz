@@ -97,7 +97,7 @@ const userColors = [
 ];
 
 // ================= WORD FILTER SYSTEM =================
-const BLOCKED_WORDS = ['nigga', 'fuck', 'bitch', 'madarchod', 'madharchod', 'randi', 'rand', 'bsdk', 'bhosdiwale', 'bhosdi', 'bhenchod', 'benchod', 'chod', 'chud', 'sperm', 'land', 'launda', 'lund', 'boob', 'pussy', 'chuchi', 'sex', 'sexy', 'chutiye', 'chut', 'chutiya', '$ex', 'nipple', 'jhaant', 'jant', 'rande's]; // Add or remove words separated by commas
+const BLOCKED_WORDS = ['nigga', 'fuck', 'bitch', 'madarchod', 'madharchod', 'randi', 'rand', 'bsdk', 'bhosdiwale', 'bhosdi', 'bhenchod', 'benchod', 'chod', 'chud', 'sperm', 'land', 'launda', 'lund', 'boob', 'pussy', 'chuchi', 'sex', 'sexy', 'chutiye', 'chut', 'chutiya', '$ex', 'nipple', 'jhaant', 'jant', 'rande']; // Add or remove words separated by commas
 const userWarnings = new Map(); // Track user warnings (socketId -> count)
 
 function containsBlockedWord(message) {
