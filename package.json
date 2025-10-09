@@ -1,19 +1,15 @@
 {
-  "name": "temp",
+  "name": "bro-chatz-notice",
   "version": "1.0.0",
+  "description": "Notice page for Bro Chatz migration to Discord",
   "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
+  "keywords": ["brochatz", "discord", "notice", "express"],
+  "author": "Bro Chatz Team",
+  "license": "MIT",
   "dependencies": {
-    "@google/generative-ai": "^0.24.1",
-    "dotenv": "^17.2.1",
-    "express": "^5.1.0",
-    "socket.io": "^4.8.1"
+    "express": "^4.19.2"
   }
 }
